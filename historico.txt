@@ -4,3 +4,102 @@ Resumo da conversa:
 - Scripts criados para exportação (`create-export`) e importação (`start-import`).
 - Incluído download automático do `.zip` exportado.
 - Criado playbook Ansible para orquestrar tudo.
+
+
+
+==================== Amazon Lex V2 - Procedimento de Exportação e Importação ====================
+
+Este documento resume todo o fluxo de exportação e importação de bots do Amazon Lex V2 entre contas AWS.
+Inclui explicações, exemplos de comandos AWS CLI, scripts bash e um playbook Ansible.
+
+--------------------------------------------------------------------------------
+✅ OBJETIVO:
+Exportar um bot Amazon Lex V2 de uma conta AWS e importar em outra conta.
+
+--------------------------------------------------------------------------------
+📦 ETAPAS DO PROCEDIMENTO:
+
+1. Exportar o bot usando `create-export`
+2. Aguardar o status `Completed`
+3. Baixar o arquivo exportado (.zip)
+4. Importar o bot com `start-import`
+5. Aguardar status `Completed` da importação
+
+--------------------------------------------------------------------------------
+🟩 SCRIPT: export-bot.sh
+
+#!/bin/bash
+set -e
+SOURCE_PROFILE="default"
+BOT_ID="SEU_BOT_ID_ORIGEM"
+BOT_VERSION="DRAFT"
+REGION="us-east-1"
+
+EXPORT_ID=$(aws lexv2-models create-export \
+  --profile "$SOURCE_PROFILE" \
+  --resource-specification '{"botExportSpecification":{"botId":"'"$BOT_ID"'","botVersion":"'"$BOT_VERSION"'"}}' \
+  --file-format LexJson \
+  --region "$REGION" | jq -r '.exportId')
+
+while true; do
+  STATUS=$(aws lexv2-models describe-export --profile "$SOURCE_PROFILE" --export-id "$EXPORT_ID" --region "$REGION" --query 'exportStatus' --output text)
+  echo "Status: $STATUS"
+  [[ "$STATUS" == "Completed" ]] && break
+  [[ "$STATUS" == "Failed" ]] && echo "❌ Exportação falhou." && exit 1
+  sleep 5
+done
+
+DOWNLOAD_URL=$(aws lexv2-models describe-export --profile "$SOURCE_PROFILE" --export-id "$EXPORT_ID" --region "$REGION" --query 'downloadUrl' --output text)
+curl -s "$DOWNLOAD_URL" -o bot-export.zip
+
+--------------------------------------------------------------------------------
+🟦 SCRIPT: import-bot.sh
+
+#!/bin/bash
+set -e
+TARGET_PROFILE="default"
+REGION="us-east-1"
+ROLE_ARN_DESTINO="arn:aws:iam::<ID_CONTA_DEST>:role/<ROLE_LEX>"
+
+IMPORT_ID=$(aws lexv2-models start-import \
+  --profile "$TARGET_PROFILE" \
+  --import-idempotency-token "import-$(date +%s)" \
+  --resource-specification botImportSpecification={botName="BotImportado",roleArn="$ROLE_ARN_DESTINO",dataPrivacy={childDirected=false},idleSessionTTLInSeconds=300} \
+  --merge-strategy FailOnConflict \
+  --file-format LexJson \
+  --cli-binary-format raw-in-base64-out \
+  --file-binaries fileb://bot-export.zip \
+  --region "$REGION" | jq -r '.importId')
+
+while true; do
+  STATUS=$(aws lexv2-models describe-import --profile "$TARGET_PROFILE" --import-id "$IMPORT_ID" --region "$REGION" --query 'importStatus' --output text)
+  echo "Status: $STATUS"
+  [[ "$STATUS" == "Completed" ]] && break
+  [[ "$STATUS" == "Failed" ]] && echo "❌ Importação falhou." && exit 1
+  sleep 5
+done
+
+--------------------------------------------------------------------------------
+📘 PLAYBOOK ANSIBLE: playbook.yml
+
+---
+- name: Exportar e importar bot Amazon Lex
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Exportar bot
+      command: bash scripts/export-bot.sh
+
+    - name: Importar bot
+      command: bash scripts/import-bot.sh
+
+--------------------------------------------------------------------------------
+📌 OBSERVAÇÕES FINAIS:
+
+- O arquivo `bot-export.zip` inclui intents, slots, prompts, slot types, e localizações.
+- A função Lambda associada deve já existir na conta de destino (mesmo ARN).
+- O alias do bot deve ser recriado após a importação.
+- A role passada na importação deve ter permissões Lex completas e confiança para `lexv2.amazonaws.com`.
+
+================================================================================
