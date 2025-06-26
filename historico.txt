@@ -1,0 +1,6 @@
+Resumo da conversa:
+- Objetivo: automatizar exportação e importação de bots Amazon Lex V2 entre contas AWS.
+- Ferramentas: AWS CLI + Ansible.
+- Scripts criados para exportação (`create-export`) e importação (`start-import`).
+- Incluído download automático do `.zip` exportado.
+- Criado playbook Ansible para orquestrar tudo.

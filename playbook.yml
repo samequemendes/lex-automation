@@ -1,0 +1,11 @@
+---
+- name: Exportar e importar bot Amazon Lex
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Exportar bot
+      command: bash scripts/export-bot.sh
+
+    - name: Importar bot
+      command: bash scripts/import-bot.sh
