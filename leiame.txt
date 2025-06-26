@@ -1,0 +1,111 @@
+
+# GitHub Actions - Deploy Automatizado para PRs
+
+## Objetivo
+
+Criar um fluxo de GitHub Actions que:
+- Executa quando há Pull Requests para `main`, `development` ou `release/*`
+- Usa arquivos de variáveis específicos para cada ambiente
+- Faz deploy para ambientes temporários descartáveis
+- Destroi o ambiente ao fechar o PR sem merge
+
+---
+
+## Estrutura esperada
+
+```
+.github/workflows/
+├── pr-deploy.yml
+.env.main
+.env.development
+.env.release
+```
+
+---
+
+## Workflow: `.github/workflows/pr-deploy.yml`
+
+```yaml
+name: PR Deploy Environment
+
+on:
+  pull_request:
+    branches:
+      - main
+      - development
+      - 'release/**'
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+
+    env:
+      ENV_FILE: ${{ github.head_ref == 'main' && '.env.main' || github.head_ref == 'development' && '.env.development' || startsWith(github.head_ref, 'release/') && '.env.release' }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Load env file
+        run: |
+          echo "Carregando variáveis do ambiente: $ENV_FILE"
+          set -a
+          source $ENV_FILE
+          set +a
+
+      - name: Deploy temporário (Terraform, Docker, etc.)
+        run: |
+          echo "Deploy com base nas variáveis carregadas"
+          echo "Executando deploy do ambiente descartável..."
+
+  destroy:
+    if: github.event.action == 'closed' && github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Destroy env
+        run: |
+          echo "Destruindo ambiente temporário do PR #${{ github.event.pull_request.number }}"
+```
+
+---
+
+## Arquivos `.env.*` de exemplo
+
+### `.env.main`
+```
+ENV=prod
+BUCKET_NAME=meu-bucket-prod
+```
+
+### `.env.development`
+```
+ENV=dev
+BUCKET_NAME=meu-bucket-dev
+```
+
+### `.env.release`
+```
+ENV=staging
+BUCKET_NAME=meu-bucket-staging
+```
+
+---
+
+## Alternativa com GitHub Environments
+
+Em `Settings > Environments`, crie:
+- `dev`
+- `staging`
+- `prod`
+
+Adicione ao workflow:
+
+```yaml
+environment:
+  name: ${{ github.ref == 'refs/heads/main' && 'prod' || github.ref == 'refs/heads/development' && 'dev' || startsWith(github.ref, 'refs/heads/release/') && 'staging' }}
+```
