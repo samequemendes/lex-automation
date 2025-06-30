@@ -1,0 +1,100 @@
+# === lex-bot-playbook.yml ===
+
+---
+- name: Exportar e importar bot Amazon Lex
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars/credentials.yml
+    - vars/config.yml
+
+  tasks:
+
+    - name: Autentica na conta de origem (AWS CLI)
+      shell: |
+        export AWS_ACCESS_KEY_ID={{ aws_access_key }}
+        export AWS_SECRET_ACCESS_KEY={{ aws_secret_key }}
+        export AWS_DEFAULT_REGION={{ aws_region }}
+        aws sts get-caller-identity
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
+      tags: auth
+
+    - name: Executa script de exportaÃ§Ã£o customizado
+      shell: |
+        chmod +x scripts/export_lex_bot.sh
+        ./scripts/export_lex_bot.sh "{{ lex_spec_file }}" "{{ s3_bucket }}"
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
+      args:
+        chdir: "{{ playbook_dir }}"
+      tags: export
+
+    - name: Autentica na conta de destino (AWS CLI)
+      shell: |
+        export AWS_ACCESS_KEY_ID={{ dest_aws_access_key }}
+        export AWS_SECRET_ACCESS_KEY={{ dest_aws_secret_key }}
+        export AWS_DEFAULT_REGION={{ dest_aws_region }}
+        aws sts get-caller-identity
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
+        AWS_DEFAULT_REGION: "{{ dest_aws_region }}"
+      tags: auth
+
+    - name: Executa script de importaÃ§Ã£o customizado
+      shell: |
+        chmod +x scripts/import_lex_bot.sh
+        ./scripts/import_lex_bot.sh "{{ export_file_name }}"
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
+        AWS_DEFAULT_REGION: "{{ dest_aws_region }}"
+      args:
+        chdir: "{{ playbook_dir }}"
+      tags: import
+
+# === vars/credentials.yml ===
+
+aws_access_key: AKIA...
+aws_secret_key: abc...
+aws_region: us-east-1
+
+dest_aws_access_key: AKIA_DEST...
+dest_aws_secret_key: xyz...
+dest_aws_region: us-east-1
+
+# === vars/config.yml ===
+
+lex_spec_file: lex-spec.json
+s3_bucket: my-lex-export-bucket
+export_file_name: my-exported-bot.zip
+
+# === scripts/export_lex_bot.sh ===
+
+#!/bin/bash
+
+LEX_SPEC_FILE=$1
+S3_BUCKET=$2
+
+aws lexv2-models start-export \
+  --resource-specification file://$LEX_SPEC_FILE \
+  --file-format LexJson \
+  --export-s3-bucket $S3_BUCKET \
+  --export-s3-prefix lex-exports/
+
+# === scripts/import_lex_bot.sh ===
+
+#!/bin/bash
+
+EXPORT_FILE=$1
+
+aws lexv2-models start-import \
+  --payload fileb:///tmp/$EXPORT_FILE \
+  --merge-strategy Overwrite
