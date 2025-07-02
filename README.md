@@ -5,6 +5,7 @@ Scripts e playbook para exportar um bot do Amazon Lex V2 de uma conta e importar
 ## Conteúdo
 
 - `scripts/export-bot.sh`: Exporta bot e baixa o arquivo `.zip`
+- `scripts/import-bot-url.sh`: Importa o bot usando uma url da AWS `.zip`
 - `scripts/import-bot.sh`: Importa bot usando o `.zip`
 - `playbook.yml`: Executa ambos com Ansible
 - `README.md`: Documentação do processo
@@ -27,3 +28,5 @@ ansible-playbook playbook.yml
 - Atualizar o locale
 - Criar uma nova versão
 - Atualizar o alias, se quiser apontar para a nova versão
+
+Possível através do script `pos-import-bot.sh`
