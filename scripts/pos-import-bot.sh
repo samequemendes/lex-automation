@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-BOT_NAME="BotImportado"
+BOT_NAME="BotImportado2"
 REGION="us-east-1"
 PROFILE="AdministratorAccess-743065069150"
 ALIAS_NAME="prod"

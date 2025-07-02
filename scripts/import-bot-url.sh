@@ -2,7 +2,7 @@
 set -e
 
 # Variáveis
-BOT_ZIP="bot-export.zip"
+BOT_ZIP="bot-export2.zip"
 REGION="us-east-1"
 PROFILE="AdministratorAccess-743065069150"
 ROLE_ARN_DESTINO="arn:aws:iam::743065069150:role/poc-role-amazon-lex-sameque-mendes"
@@ -34,7 +34,7 @@ echo "📥 Iniciando importação do bot..."
 aws lexv2-models start-import \
   --profile "$PROFILE" \
   --import-id "$IMPORT_ID" \
-  --resource-specification "{\"botImportSpecification\":{\"botName\":\"BotImportado\",\"roleArn\":\"$ROLE_ARN_DESTINO\",\"dataPrivacy\":{\"childDirected\":false},\"idleSessionTTLInSeconds\":300}}" \
+  --resource-specification "{\"botImportSpecification\":{\"botName\":\"BotImportado2\",\"roleArn\":\"$ROLE_ARN_DESTINO\",\"dataPrivacy\":{\"childDirected\":false},\"idleSessionTTLInSeconds\":300}}" \
   --merge-strategy FailOnConflict \
   --region "$REGION"
 

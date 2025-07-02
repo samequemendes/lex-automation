@@ -20,4 +20,4 @@ while true; do
 done
 
 DOWNLOAD_URL=$(aws lexv2-models describe-export --profile "$SOURCE_PROFILE" --export-id "$EXPORT_ID" --region "$REGION" --query 'downloadUrl' --output text)
-curl -s "$DOWNLOAD_URL" -o bot-export.zip
+curl -s "$DOWNLOAD_URL" -o bot-export2.zip
