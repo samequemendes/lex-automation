@@ -1,60 +1,50 @@
 ---
-- name: Exportar e importar bot Amazon Lex
-  hosts: localhost
-  connection: local
+- name: "PLAYBOOK LEX - ORQUESTRAÇÃO"
+  hosts: "{{ hostname | default('localhost') }}"
   gather_facts: false
-
+  become: false
   vars_files:
-    - vars/credentials.yml
-    - vars/config.yml
+    - vars/main.yml
 
   tasks:
 
-    - name: Configura credenciais AWS temporárias
-      set_fact:
-        AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-        AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-        AWS_REGION: "{{ aws_region }}"
+    - name: "🧾 Listar todos os bots"
+      shell: ./scripts/list-bots.sh
+      register: list_bots_output
+      changed_when: false
+      tags: list_bots
 
-    - name: Define variáveis de ambiente para autenticação AWS
-      shell: |
-        export AWS_ACCESS_KEY_ID={{ AWS_ACCESS_KEY_ID }}
-        export AWS_SECRET_ACCESS_KEY={{ AWS_SECRET_ACCESS_KEY }}
-        export AWS_DEFAULT_REGION={{ AWS_REGION }}
-        aws lexv2-models start-export \
-          --resource-specification file://{{ lex_spec_file }} \
-          --file-format LexJson \
-          --export-s3-bucket {{ s3_bucket }} \
-          --export-s3-prefix lex-exports/
-      environment:
-        AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-        AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-        AWS_DEFAULT_REGION: "{{ AWS_REGION }}"
-      tags: export
-
-    - name: Pausa para garantir exportação
+    - name: "🔍 Exibir bots disponíveis"
+      debug:
+        var: list_bots_output.stdout_lines
+      tags: list_bots
+    
+    - name: "🎯 Selecionar o bot desejado"
       pause:
-        seconds: 20
+        prompt: "Digite o nome exato do bot que você quer selecionar:"
+      register: selected_bot
+      tags: list_bots
 
-    - name: Baixa o artefato do S3 exportado
-      shell: |
-        aws s3 cp s3://{{ s3_bucket }}/lex-exports/{{ export_file_name }} /tmp/{{ export_file_name }}
-      environment:
-        AWS_ACCESS_KEY_ID: "{{ AWS_ACCESS_KEY_ID }}"
-        AWS_SECRET_ACCESS_KEY: "{{ AWS_SECRET_ACCESS_KEY }}"
-        AWS_DEFAULT_REGION: "{{ AWS_REGION }}"
-      tags: export
+    - name: "✅ Bot selecionado"
+      debug:
+        msg: "Você selecionou o bot: {{ selected_bot.user_input }}"
+      tags: list_bots
 
-    - name: Importa bot na outra conta
-      shell: |
-        export AWS_ACCESS_KEY_ID={{ dest_aws_access_key }}
-        export AWS_SECRET_ACCESS_KEY={{ dest_aws_secret_key }}
-        export AWS_DEFAULT_REGION={{ dest_aws_region }}
-        aws lexv2-models start-import \
-          --payload fileb:///tmp/{{ export_file_name }} \
-          --merge-strategy Overwrite
-      environment:
-        AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
-        AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
-        AWS_DEFAULT_REGION: "{{ dest_aws_region }}"
-      tags: import
+    - name: "📌 Salvar bot escolhido"
+      set_fact:
+        bot_name_selected: "{{ selected_bot.user_input }}"
+
+    - name: "📦 Exportar bot escolhido"
+      shell: ./scripts/export-bot.sh "{{ bot_name_selected }}"
+      when: export_enabled | default(false)
+      tags: export_bot
+
+    - name: "📥 Importar bot exportado"
+      shell: ./scripts/import-bot.sh
+      when: import_enabled | default(false)
+      tags: import_bot
+
+    - name: "🚀 Fazer deploy do bot (versão + alias)"
+      shell: ./scripts/post-import-bot.sh
+      when: deploy_enabled | default(false)
+      tags: deploy_bot
