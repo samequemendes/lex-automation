@@ -21,3 +21,9 @@ Scripts e playbook para exportar um bot do Amazon Lex V2 de uma conta e importar
 ```bash
 ansible-playbook playbook.yml
 ```
+
+## A cada nova alteração de intents, você precisa:
+
+- Atualizar o locale
+- Criar uma nova versão
+- Atualizar o alias, se quiser apontar para a nova versão

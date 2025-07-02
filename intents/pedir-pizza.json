@@ -1,0 +1,11 @@
+{
+  "intentName": "PedirPizza",
+  "description": "Intenção para pedir uma pizza",
+  "sampleUtterances": [
+    { "utterance": "Quero pedir uma pizza" },
+    { "utterance": "Me vê uma pizza" }
+  ],
+  "fulfillmentCodeHook": {
+    "enabled": true
+  }
+}
