@@ -1,0 +1,17 @@
+- name: "🧾 Listar todos os bots"
+  shell: ./scripts/listar-bot-v2.sh
+  register: list_bots_output
+  changed_when: false
+
+- name: "📤 Exibir lista de bots encontrados"
+  debug:
+    msg: "{{ list_bots_output.stdout_lines }}"
+
+- name: "🎯 Selecionar o bot desejado"
+  pause:
+    prompt: "Digite o nome exato do bot que você quer selecionar:"
+  register: selected_bot
+
+- name: "📌 Salvar bot escolhido"
+  set_fact:
+    bot_name_selected: "{{ selected_bot.user_input }}"
