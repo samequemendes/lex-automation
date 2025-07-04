@@ -38,7 +38,26 @@
       shell: ./scripts/export-bot.sh "{{ bot_name_selected }}"
       when: export_enabled | default(false)
       tags: export_bot
+    
+    - name: "📂 Verificar se o bot foi exportado"
+      stat:
+        path: "bot-export.zip"
+      register: export_check
+      when: export_enabled | default(false)
 
+    - name: "📋 Exibir resultado da exportação
+      debug:
+        msg: "O bot foi exportado com sucesso: {{ export_check.stat.exists }}"
+      when: export_enabled | default(false)
+      tags: export_bot
+    
+    - name: "📥 Verificar se o bot exportado existe"
+      stat:
+        path: "bot-export.zip"
+      register: import_check
+      when: import_enabled | default(false)
+      tags: import_bot
+    
     - name: "📥 Importar bot exportado"
       shell: ./scripts/import-bot.sh
       when: import_enabled | default(false)
