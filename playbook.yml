@@ -42,7 +42,7 @@
     - import_tasks: tasks/export_bot.yml
       tags: export_bot
   
-  
+
     # - name: "📦 Exportar bot escolhido"
     #   shell: ./scripts/export-bot.sh "{{ bot_name_selected }}"
     #   when: export_enabled | default(false)
@@ -64,7 +64,9 @@
     - import_tasks: tasks/import_bot.yml
       tags: import_bot
 
-
+    - name: " Mensagem de conclusão"
+      debug:
+        msg: "Playbook de orquestração do Amazon Lex concluído com sucesso!"
     # - name: "📥 Verificar se o bot exportado existe"
     #   stat:
     #     path: "bot-export.zip"

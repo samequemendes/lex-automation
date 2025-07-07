@@ -1,6 +1,6 @@
 1. **Configurar o Playbook Principal do Ansible**:
 
-   * Criar o arquivo do playbook com as três tasks principais: listar, exportar e importar o bot.
+   * Criar o arquivo do playbook com as três tasks principais: listar, exportar e importar o bot e deploy.
 
 2. **Criar a Task de Listar o Bot**:
 
