@@ -4,6 +4,7 @@ SOURCE_PROFILE="AdministratorAccess-743065069150"
 BOT_ID="WMZQH0M4SQ"
 BOT_VERSION="DRAFT"
 REGION="us-east-1"
+ENVIRONMENT="dev" # Defina o ambiente conforme necessário
 
 EXPORT_ID=$(aws lexv2-models create-export \
   --profile "$SOURCE_PROFILE" \
@@ -20,4 +21,6 @@ while true; do
 done
 
 DOWNLOAD_URL=$(aws lexv2-models describe-export --profile "$SOURCE_PROFILE" --export-id "$EXPORT_ID" --region "$REGION" --query 'downloadUrl' --output text)
-curl -s "$DOWNLOAD_URL" -o bot-export2.zip
+EXPORT_DATE=$(date +%F)
+OUTPUT_FILE="${EXPORT_DATE}-${BOT_ID}_amazon_lex-${ENVIRONMENT}.zip"
+curl -s "$DOWNLOAD_URL" -o "$OUTPUT_FILE"

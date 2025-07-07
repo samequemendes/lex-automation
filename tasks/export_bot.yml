@@ -1,0 +1,36 @@
+- name: "❌ Verificar se o bot foi selecionado"
+  fail:
+    msg: "Nenhum bot foi selecionado! Execute a task de listagem e seleção de bot antes de exportar."
+  when: bot_name_selected is not defined
+  tags: export_bot
+
+- name: "📦 Exportar bot escolhido"
+  shell: ./scripts/export-bot-v3.sh "{{ bot_name_selected }}"
+  when: export_enabled | default(false)
+  tags: export_bot
+
+- name: "📁 Garantir diretório de artefatos"
+  file:
+    path: artifacts
+    state: directory
+  when: export_enabled | default(false)
+  tags: export_bot
+
+- name: "🚚 Mover exportação para artefatos"
+  command: mv bot-export.zip artifacts/bot-export.zip
+  args:
+    removes: bot-export.zip
+  when: export_enabled | default(false)
+  tags: export_bot
+
+- name: "📂 Verificar se o bot foi exportado"
+  stat:
+    path: "artifacts/bot-export.zip"
+  register: export_check
+  when: export_enabled | default(false)
+
+- name: "📋 Exibir resultado da exportação"
+  debug:
+    msg: "O bot foi exportado com sucesso: {{ export_check.stat.exists }}"
+  when: export_enabled | default(false)
+  tags: export_bot

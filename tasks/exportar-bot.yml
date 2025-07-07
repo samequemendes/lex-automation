@@ -1,0 +1,8 @@
+- name: "📦 Exportar bot selecionado"
+  shell: ./scripts/export-bot.sh "{{ bot_name_selected }}"
+  register: export_bot_output
+  changed_when: true
+
+- name: "✅ Resultado da exportação"
+  debug:
+    var: export_bot_output.stdout_lines
