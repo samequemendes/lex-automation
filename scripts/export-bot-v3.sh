@@ -1,28 +1,17 @@
 #!/bin/bash
 set -e
 
-BOT_NAME="$1"
+BOT_ID="$1"
 REGION="us-east-1"
 PROFILE="AdministratorAccess-743065069150"
 
-if [ -z "$BOT_NAME" ]; then
-  echo "❌ Nome do bot não informado!"
-  echo "Uso: ./export-bot.sh <NOME_DO_BOT>"
-  exit 1
-fi
-
-BOT_ID=$(aws lexv2-models list-bots \
-  --region "$REGION" \
-  --profile "$PROFILE" \
-  --query "botSummaries[?botName=='$BOT_NAME'].botId" \
-  --output text)
-
 if [ -z "$BOT_ID" ]; then
-  echo "❌ Bot '$BOT_NAME' não encontrado."
+  echo "❌ ID do bot não informado!"
+  echo "Uso: ./export-bot-v3.sh <ID_DO_BOT>"
   exit 1
 fi
 
-echo "📦 Exportando bot '$BOT_NAME' (ID: $BOT_ID)..."
+echo "📦 Exportando bot com ID: $BOT_ID..."
 
 EXPORT_ID=$(aws lexv2-models create-export \
   --resource-specification "botExportSpecification={botId=$BOT_ID,botVersion=DRAFT}" \

@@ -1,0 +1,43 @@
+- name: Verificar se o Terraform já está instalado
+  ansible.builtin.command: terraform --version
+  register: terraform_version
+  ignore_errors: yes
+
+- name: Informar que o Terraform já está instalado
+  ansible.builtin.debug:
+    msg: "Terraform já está instalado: {{ terraform_version.stdout_lines[0] }}"
+  when: terraform_version.rc == 0
+
+- name: Informar que o Terraform não está instalado e iniciar download
+  ansible.builtin.debug:
+    msg: "Terraform não está instalado. Iniciando download e instalação..."
+  when: terraform_version.rc != 0
+
+- name: Instalar Terraform se não existir
+  ansible.builtin.shell: |
+    curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip
+    unzip terraform.zip
+    mv terraform /usr/local/bin/
+  when: terraform_version.rc != 0
+
+# - name: Instalar Terraform se não existir
+#   ansible.builtin.shell: |
+#     curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip
+#     unzip terraform.zip
+#     mv terraform /usr/local/bin/
+#   when: not terraform_bin.stat.exists
+
+# - name: Inicializar Terraform
+#   ansible.builtin.command:
+#     cmd: terraform init
+#     chdir: /caminho/para/seu/infra
+
+# - name: Executar Terraform Plan
+#   ansible.builtin.command:
+#     cmd: terraform plan -out=tfplan
+#     chdir: /caminho/para/seu/infra
+
+# - name: Aplicar Terraform
+#   ansible.builtin.command:
+#     cmd: terraform apply -auto-approve tfplan
+#     chdir: /caminho/para/seu/infra

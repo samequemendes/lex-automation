@@ -7,5 +7,5 @@ PROFILE="AdministratorAccess-743065069150"
 aws lexv2-models list-bots \
   --region "$REGION" \
   --profile "$PROFILE" \
-  --query "botSummaries[].{Name:botName,Status:botStatus}" \
+  --query "botSummaries[].{Name:botName,ID:botId,Status:botStatus}" \
   --output table

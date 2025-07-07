@@ -1,5 +1,3 @@
-Combinado! Vamos lá, então, um checklist básico pra essa próxima hora:
-
 1. **Configurar o Playbook Principal do Ansible**:
 
    * Criar o arquivo do playbook com as três tasks principais: listar, exportar e importar o bot.

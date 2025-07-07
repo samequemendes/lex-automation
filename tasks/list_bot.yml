@@ -3,14 +3,18 @@
   register: list_bots_output
   changed_when: false
 
-- name: "📤 Exibir lista de bots encontrados"
+- name: "🔍 Exibir bots disponíveis"
   debug:
-    msg: "{{ list_bots_output.stdout_lines }}"
+    var: list_bots_output.stdout_lines
 
 - name: "🎯 Selecionar o bot desejado"
   pause:
     prompt: "Digite o nome exato do bot que você quer selecionar:"
   register: selected_bot
+
+- name: "✅ Bot selecionado"
+  debug:
+    msg: "Você selecionou o bot: {{ selected_bot.user_input }}"
 
 - name: "📌 Salvar bot escolhido"
   set_fact:
