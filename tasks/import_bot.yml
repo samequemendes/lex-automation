@@ -34,17 +34,36 @@
   changed_when: true
   tags: import_bot
 
+- name: "📦 Definir JSON de especificação do bot"
+  set_fact:
+    bot_specification_json: >-
+      {{
+        {
+          "botImportSpecification": {
+            "botName": bot_name,
+            "roleArn": role_arn,
+            "dataPrivacy": {
+              "childDirected": false
+            },
+            "idleSessionTTLInSeconds": 300
+          }
+        } | to_json
+      }}
+  tags: import_bot
+
 - name: "🚀 Iniciar importação do bot"
   shell: >
     aws lexv2-models start-import
     --profile {{ profile_AWS }}
     --import-id "{{ import_id }}"
-    --resource-specification '{{ {"botImportSpecification":{"botName":"BotImportado2","roleArn":"arn:aws:iam::743065069150:role/poc-role-amazon-lex-sameque-mendes","dataPrivacy":{"childDirected":false},"idleSessionTTLInSeconds":300}} | to_json }}'
+    --resource-specification '{{ bot_specification_json }}'
     --merge-strategy FailOnConflict
-    --region us-east-1
+    --region {{ region }}
   register: import_start
   changed_when: true
   tags: import_bot
+
+
 
 - name: "⏳ Aguardar conclusão da importação"
   shell: >
