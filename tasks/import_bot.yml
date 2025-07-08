@@ -1,0 +1,88 @@
+- name: "❌ Verificar se o arquivo de exportação existe"
+  stat:
+    path: "{{ bot_export_path }}"
+  register: bot_zip_check
+  tags: import_bot
+
+- name: "📦 Validar existência do arquivo para importação"
+  fail:
+    msg: "❌ Arquivo {{ bot_export_path }} não encontrado!"
+  when: not bot_zip_check.stat.exists
+  tags: import_bot
+
+- name: "🔗 Criar upload URL para importação"
+  shell: >
+    aws lexv2-models create-upload-url
+    --region us-east-1
+    --profile AdministratorAccess-743065069150
+  register: upload_result
+  changed_when: false
+  tags: import_bot
+
+- name: "📥 Extrair importId e uploadUrl"
+  set_fact:
+    import_id: "{{ upload_result.stdout | from_json | json_query('importId') }}"
+    upload_url: "{{ upload_result.stdout | from_json | json_query('uploadUrl') }}"
+  tags: import_bot
+
+- name: "📤 Enviar arquivo para Lex usando curl"
+  shell: >
+    curl -s -X PUT "{{ upload_url }}"
+    -H "Content-Type: application/zip"
+    --upload-file "{{ bot_export_path }}"
+  register: upload_curl
+  changed_when: true
+  tags: import_bot
+
+- name: "🚀 Iniciar importação do bot"
+  shell: >
+    aws lexv2-models start-import
+    --profile AdministratorAccess-743065069150
+    --import-id "{{ import_id }}"
+    --resource-specification '{{ {"botImportSpecification":{"botName":"BotImportado2","roleArn":"arn:aws:iam::743065069150:role/poc-role-amazon-lex-sameque-mendes","dataPrivacy":{"childDirected":false},"idleSessionTTLInSeconds":300}} | to_json }}'
+    --merge-strategy FailOnConflict
+    --region us-east-1
+  register: import_start
+  changed_when: true
+  tags: import_bot
+
+- name: "⏳ Aguardar conclusão da importação"
+  shell: >
+    aws lexv2-models describe-import
+    --import-id "{{ import_id }}"
+    --region us-east-1
+    --profile AdministratorAccess-743065069150
+    --query 'importStatus'
+    --output text
+  register: import_status
+  retries: 20
+  delay: 5
+  until: import_status.stdout == "Completed" or import_status.stdout == "Failed"
+  failed_when: import_status.stdout == "Failed"
+  changed_when: false
+  tags: import_bot
+
+- name: "📋 Mostrar status final da importação"
+  debug:
+    msg: "✅ Importação concluída com status: {{ import_status.stdout }}"
+  when: import_status.stdout == "Completed"
+  tags: import_bot
+
+- name: "❌ Motivo da falha na importação"
+  shell: >
+    aws lexv2-models describe-import
+    --import-id "{{ import_id }}"
+    --region us-east-1
+    --profile AdministratorAccess-743065069150
+    --query 'failureReason'
+    --output text
+  when: import_status.stdout == "Failed"
+  register: failure_reason
+  changed_when: false
+  tags: import_bot
+
+- name: "🛑 Mostrar motivo da falha"
+  debug:
+    msg: "Importação falhou: {{ failure_reason.stdout }}"
+  when: import_status.stdout == "Failed"
+  tags: import_bot
