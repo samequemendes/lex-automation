@@ -1,7 +1,13 @@
-- name: "🧾 Listar todos os bots"
-  shell: ./scripts/listar-bot-v2.sh
+- name: "🧾 Listar todos os bots do Amazon Lex V2 (formato tabela)"
+  shell: >
+    aws lexv2-models list-bots
+    --region {{ aws_region }}
+    --profile {{ aws_profile }}
+    --query "botSummaries[].{Name:botName,ID:botId,Status:botStatus}"
+    --output table
   register: list_bots_output
   changed_when: false
+  tags: listar_bots
 
 - name: "🔍 Exibir bots disponíveis"
   debug:

@@ -1,5 +1,5 @@
 #!/bin/bash
-PROFILE="AdministratorAccess-743065069150"
+PROFILE="{{ profile_aws}}"
 REGION="us-east-1"
 
 aws lexv2-models list-bots \

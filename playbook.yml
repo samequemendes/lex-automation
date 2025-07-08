@@ -1,7 +1,7 @@
 ---
 - name: "PLAYBOOK LEX - ORQUESTRAÇÃO"
   hosts: "{{ hostname | default('localhost') }}"
-  gather_facts: false
+  gather_facts: true
   become: false
   vars_files:
     - vars/main.yml
@@ -11,8 +11,8 @@
     - import_tasks: tasks/deploy_bot.yml
       tags: deploy_bot
 
-    - import_tasks: tasks/list_bot.yml
-      tags: list_bots
+    # - import_tasks: tasks/list_bot.yml
+    #   tags: list_bots
 
     # - name: "🧾 Listar todos os bots"
     #   shell: ./scripts/list-bots.sh
