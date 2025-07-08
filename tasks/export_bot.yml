@@ -10,7 +10,7 @@
     --resource-specification botExportSpecification={{ '{botId=' + bot_id + ',botVersion=DRAFT}' }}
     --file-format LexJson
     --region us-east-1
-    --profile AdministratorAccess-743065069150
+    --profile {{ profile_AWS }}
     --query 'exportId'
     --output text
   register: export_result
@@ -22,7 +22,7 @@
     aws lexv2-models describe-export
     --export-id {{ export_result.stdout }}
     --region us-east-1
-    --profile AdministratorAccess-743065069150
+    --profile {{ profile_AWS }}
     --query 'exportStatus'
     --output text
   register: export_status
@@ -38,7 +38,7 @@
     aws lexv2-models describe-export
     --export-id {{ export_result.stdout }}
     --region us-east-1
-    --profile AdministratorAccess-743065069150
+    --profile {{ profile_AWS }}
     --query 'downloadUrl'
     --output text
   register: download_url

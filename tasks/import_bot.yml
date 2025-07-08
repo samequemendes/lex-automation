@@ -14,7 +14,7 @@
   shell: >
     aws lexv2-models create-upload-url
     --region us-east-1
-    --profile AdministratorAccess-743065069150
+    --profile {{ profile_AWS }}
   register: upload_result
   changed_when: false
   tags: import_bot
@@ -37,7 +37,7 @@
 - name: "🚀 Iniciar importação do bot"
   shell: >
     aws lexv2-models start-import
-    --profile AdministratorAccess-743065069150
+    --profile {{ profile_AWS }}
     --import-id "{{ import_id }}"
     --resource-specification '{{ {"botImportSpecification":{"botName":"BotImportado2","roleArn":"arn:aws:iam::743065069150:role/poc-role-amazon-lex-sameque-mendes","dataPrivacy":{"childDirected":false},"idleSessionTTLInSeconds":300}} | to_json }}'
     --merge-strategy FailOnConflict
@@ -51,7 +51,7 @@
     aws lexv2-models describe-import
     --import-id "{{ import_id }}"
     --region us-east-1
-    --profile AdministratorAccess-743065069150
+    --profile {{ profile_AWS }}
     --query 'importStatus'
     --output text
   register: import_status
@@ -73,7 +73,7 @@
     aws lexv2-models describe-import
     --import-id "{{ import_id }}"
     --region us-east-1
-    --profile AdministratorAccess-743065069150
+    --profile {{ profile_AWS }}
     --query 'failureReason'
     --output text
   when: import_status.stdout == "Failed"

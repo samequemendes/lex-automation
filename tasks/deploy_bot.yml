@@ -69,3 +69,46 @@
 #   ansible.builtin.command:
 #     cmd: terraform apply -auto-approve tfplan
 #     chdir: /caminho/para/seu/infra
+
+- name: 📦 Executar Terraform Apply sem ANSI
+  ansible.builtin.shell: |
+    TF_IN_AUTOMATION=true terraform apply -auto-approve -var-file=terraform.tfvars
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: terraform_apply_result
+  ignore_errors: true
+  tags: terraform_apply
+
+- name: 📄 Mostrar STDOUT (resultado do apply)
+  debug:
+    var: terraform_apply_result.stdout_lines
+  tags: terraform_apply
+
+- name: ❌ Mostrar STDERR (caso erro)
+  debug:
+    var: terraform_apply_result.stderr_lines
+  when: terraform_apply_result.rc != 0
+  tags: terraform_apply
+
+
+# terraform destroy
+
+- name: 📦 Executar Terraform Destroy sem ANSI
+  ansible.builtin.shell: |
+    TF_IN_AUTOMATION=true terraform destroy -auto-approve -var-file=terraform.tfvars
+  args:
+    chdir: "{{ terraform_dir }}"
+  register: terraform_destroy_result
+  ignore_errors: true
+  tags: terraform_destroy
+
+- name: 📄 Mostrar STDOUT (resultado do destroy)
+  debug:
+    var: terraform_destroy_result.stdout_lines
+  tags: terraform_destroy
+
+- name: ❌ Mostrar STDERR (caso erro)
+  debug:
+    var: terraform_destroy_result.stderr_lines
+  when: terraform_destroy_result.rc != 0
+  tags: terraform_destroy
