@@ -11,7 +11,7 @@
 
     # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
     - import_tasks: tasks/deploy_bot.yml
-      tags: [deploy_bot]
+      tags: [deploy_terraform]
 
     # 🧾 Etapa de listagem de bots (se quiser reativar depois)
     # - import_tasks: tasks/list_bot.yml
