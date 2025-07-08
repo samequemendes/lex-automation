@@ -1,0 +1,6 @@
+terraform_repo_url: "https://github.com/samequemendes/terraform-aws-lex-examples.git"
+branch: "main"
+terraform_dir: "./terraform/"
+project_name: "its-on-fight"
+environment: "hml"
+region: "us-east-1"

@@ -20,22 +20,30 @@
     mv terraform /usr/local/bin/
   when: terraform_version.rc != 0
 
-# - name: Instalar Terraform se não existir
-#   ansible.builtin.shell: |
-#     curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip
-#     unzip terraform.zip
-#     mv terraform /usr/local/bin/
-#   when: not terraform_bin.stat.exists
+- name: "Clonar repositório do Terraform"
+  ansible.builtin.git:
+    repo: "{{ terraform_repo_url }}"
+    dest: ./terraform/
+    version: main
+  tags: git
 
-# - name: Inicializar Terraform
-#   ansible.builtin.command:
-#     cmd: terraform init
-#     chdir: /caminho/para/seu/infra
+# - name: "Atualiza valores do TFVARS"
+#   ansible.builtin.template:
+#     src: templates/terraform.tfvars.j2
+#     dest: ./terraform/terraform.tfvars
+#   tags: tfvars
+  
+- name: Inicializar Terraform
+  ansible.builtin.command:
+    cmd: terraform init
+    chdir: "{{ terraform_dir }}"
+  tags: terraform_init
 
-# - name: Executar Terraform Plan
-#   ansible.builtin.command:
-#     cmd: terraform plan -out=tfplan
-#     chdir: /caminho/para/seu/infra
+- name: Executar Terraform Plan
+  ansible.builtin.command:
+    cmd: terraform plan -var-file="{{ terraform_dir }}"/terraform.tfvars
+    chdir: "{{ terraform_dir }}"
+  tags: terraform_plan
 
 # - name: Aplicar Terraform
 #   ansible.builtin.command:
