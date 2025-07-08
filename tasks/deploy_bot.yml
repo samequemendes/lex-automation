@@ -27,11 +27,17 @@
     version: main
   tags: git
 
-# - name: "Atualiza valores do TFVARS"
-#   ansible.builtin.template:
-#     src: templates/terraform.tfvars.j2
-#     dest: ./terraform/terraform.tfvars
-#   tags: tfvars
+- name: "Atualiza valores do TFVARS"
+  ansible.builtin.template:
+    src: templates/terraform.tfvars.j2
+    dest: ./terraform/terraform.tfvars
+  tags: tfvars
+
+- name: Define configurações de backend do Terraform
+  ansible.builtin.template:
+    src: templates/backend.tf.j2
+    dest: ./terraform/backend.tf
+  tags: backend
   
 - name: Inicializar Terraform
   ansible.builtin.command:
@@ -41,7 +47,7 @@
 
 - name: Executar Terraform Plan
   ansible.builtin.command:
-    cmd: terraform plan -var-file="{{ terraform_dir }}"/terraform.tfvars
+    cmd: terraform plan -var-file=terraform.tfvars
     chdir: "{{ terraform_dir }}"
   tags: terraform_plan
 
