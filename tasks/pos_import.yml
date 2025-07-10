@@ -1,0 +1,80 @@
+---
+- name: "🚀 Criar nova versão do bot"
+  shell: |
+    aws lexv2-models create-bot-version \
+      --bot-id {{ bot_id }} \
+      --region {{ region }} \
+      --profile {{ aws_profile }} \
+      --bot-version-locale-specification '{"pt_BR":{"sourceBotVersion":"DRAFT"}}' \
+      --query 'botVersion' \
+      --output text
+  register: bot_version
+  changed_when: true
+
+- name: "⏳ Aguardar a versão '{{ bot_version.stdout }}' ficar disponível"
+  shell: |
+    while true; do
+      STATUS=$(aws lexv2-models describe-bot-version \
+        --bot-id {{ bot_id }} \
+        --bot-version {{ bot_version.stdout }} \
+        --region {{ region }} \
+        --profile {{ aws_profile }} \
+        --query 'botStatus' \
+        --output text)
+
+      echo "📌 Status: $STATUS"
+
+      if [[ "$STATUS" == "Available" ]]; then
+        break
+      elif [[ "$STATUS" == "Failed" ]]; then
+        echo "❌ Criação da versão falhou!"
+        exit 1
+      fi
+      sleep 5
+    done
+  changed_when: false
+
+- name: "🔁 Criar alias '{{ alias_name }}' apontando para versão '{{ bot_version.stdout }}'"
+  shell: |
+    aws lexv2-models create-bot-alias \
+      --bot-id {{ bot_id }} \
+      --bot-alias-name {{ alias_name }} \
+      --bot-version {{ bot_version.stdout }} \
+      --region {{ region }} \
+      --profile {{ aws_profile }} \
+      --query 'botAliasId' \
+      --output text
+  register: bot_alias_id
+  changed_when: true
+
+- name: "⏳ Aguardar alias '{{ alias_name }}' ficar disponível"
+  shell: |
+    while true; do
+      STATUS=$(aws lexv2-models describe-bot-alias \
+        --bot-id {{ bot_id }} \
+        --bot-alias-id {{ bot_alias_id.stdout }} \
+        --region {{ region }} \
+        --profile {{ aws_profile }} \
+        --query 'botAliasStatus' \
+        --output text)
+
+      echo "📌 Status alias: $STATUS"
+
+      if [[ "$STATUS" == "Available" ]]; then
+        break
+      elif [[ "$STATUS" == "Failed" ]]; then
+        echo "❌ Criação do alias falhou!"
+        exit 1
+      fi
+      sleep 5
+    done
+  changed_when: false
+
+- name: "🎉 Exibir resultado final"
+  debug:
+    msg: |
+      ✅ Bot pronto para uso!
+      🔗 Informações:
+      - botId: {{ bot_id }}
+      - botVersion: {{ bot_version.stdout }}
+      - alias: {{ alias_name }} (ID: {{ bot_alias_id.stdout }})
