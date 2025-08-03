@@ -1,9 +1,11 @@
 #!/bin/bash
-PROFILE="{{ profile_aws}}"
+set -e
+
 REGION="us-east-1"
+PROFILE="AdministratorAccess-743065069150"
 
 aws lexv2-models list-bots \
   --region "$REGION" \
   --profile "$PROFILE" \
-  --query "botSummaries[*].[botId,botName]" \
+  --query "botSummaries[].{Name:botName,ID:botId,Status:botStatus}" \
   --output table

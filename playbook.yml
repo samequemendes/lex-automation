@@ -1,50 +1,31 @@
 ---
 - name: "PLAYBOOK LEX - ORQUESTRAÇÃO"
   hosts: "{{ hostname | default('localhost') }}"
-  gather_facts: false
+  gather_facts: true
   become: false
   vars_files:
     - vars/main.yml
+    - vars/config.yml
 
   tasks:
 
-    - name: "🧾 Listar todos os bots"
-      shell: ./scripts/list-bots.sh
-      register: list_bots_output
-      changed_when: false
-      tags: list_bots
+    # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
+    - import_tasks: tasks/deploy_bot.yml
+      tags: [deploy_terraform]
 
-    - name: "🔍 Exibir bots disponíveis"
+    # 🧾 Etapa de listagem de bots (se quiser reativar depois)
+    # - import_tasks: tasks/list_bot.yml
+    #   tags: [list_bots]
+
+    # 📤 Exportação do bot da conta origem
+    - import_tasks: tasks/export_bot.yml
+      tags: [export_bot]
+
+    # 📥 Importação do bot na conta destino
+    - import_tasks: tasks/import_bot.yml
+      tags: [import_bot]
+
+    # ✅ Mensagem final
+    - name: "✅ Mensagem de conclusão"
       debug:
-        var: list_bots_output.stdout_lines
-      tags: list_bots
-    
-    - name: "🎯 Selecionar o bot desejado"
-      pause:
-        prompt: "Digite o nome exato do bot que você quer selecionar:"
-      register: selected_bot
-      tags: list_bots
-
-    - name: "✅ Bot selecionado"
-      debug:
-        msg: "Você selecionou o bot: {{ selected_bot.user_input }}"
-      tags: list_bots
-
-    - name: "📌 Salvar bot escolhido"
-      set_fact:
-        bot_name_selected: "{{ selected_bot.user_input }}"
-
-    - name: "📦 Exportar bot escolhido"
-      shell: ./scripts/export-bot.sh "{{ bot_name_selected }}"
-      when: export_enabled | default(false)
-      tags: export_bot
-
-    - name: "📥 Importar bot exportado"
-      shell: ./scripts/import-bot.sh
-      when: import_enabled | default(false)
-      tags: import_bot
-
-    - name: "🚀 Fazer deploy do bot (versão + alias)"
-      shell: ./scripts/post-import-bot.sh
-      when: deploy_enabled | default(false)
-      tags: deploy_bot
+        msg: "Playbook de orquestração do Amazon Lex concluído com sucesso!"

@@ -1,0 +1,75 @@
+- name: "❌ Verificar se o bot foi selecionado"
+  fail:
+    msg: "Nenhum bot foi selecionado! Execute a task de listagem e seleção de bot antes de exportar."
+  when: bot_id is not defined
+  tags: export_bot
+
+- name: "📦 Iniciar exportação do bot"
+  shell: >
+    aws lexv2-models create-export
+    --resource-specification botExportSpecification={{ '{botId=' + bot_id + ',botVersion=DRAFT}' }}
+    --file-format LexJson
+    --region us-east-1
+    --profile {{ profile_AWS }}
+    --query 'exportId'
+    --output text
+  register: export_result
+  changed_when: false
+  tags: export_bot
+
+- name: "⏳ Aguardar exportação completar (polling)"
+  shell: >
+    aws lexv2-models describe-export
+    --export-id {{ export_result.stdout }}
+    --region us-east-1
+    --profile {{ profile_AWS }}
+    --query 'exportStatus'
+    --output text
+  register: export_status
+  retries: 20
+  delay: 5
+  until: export_status.stdout == "Completed" or export_status.stdout == "Failed"
+  failed_when: export_status.stdout == "Failed"
+  changed_when: false
+  tags: export_bot
+
+- name: "📥 Obter download URL da exportação"
+  shell: >
+    aws lexv2-models describe-export
+    --export-id {{ export_result.stdout }}
+    --region us-east-1
+    --profile {{ profile_AWS }}
+    --query 'downloadUrl'
+    --output text
+  register: download_url
+  changed_when: false
+  tags: export_bot
+
+- name: "🕓 Definir data atual no formato YYYY-MM-DD"
+  set_fact:
+    export_date: "{{ ansible_date_time.date }}"
+  tags: export_bot
+
+- name: "📄 Definir nome do arquivo de exportação"
+  set_fact:
+    bot_export_filename: "{{ export_date }}-{{ bot_id }}.zip"
+    bot_export_path: "artifacts/{{ export_date }}-{{ bot_id }}.zip"
+  tags: export_bot
+
+- name: "📁 Garantir diretório de artefatos"
+  file:
+    path: artifacts
+    state: directory
+  tags: export_bot
+
+- name: "⬇️ Baixar bot exportado para {{ bot_export_path }}"
+  get_url:
+    url: "{{ download_url.stdout }}"
+    dest: "{{ bot_export_path }}"
+    mode: '0644'
+  tags: export_bot
+
+- name: "✅ Confirmar exportação em {{ bot_export_path }}"
+  debug:
+    msg: "Bot exportado com sucesso para '{{ bot_export_path }}'"
+  tags: export_bot
