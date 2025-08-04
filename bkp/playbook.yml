@@ -1,4 +1,3 @@
----
 - name: "PLAYBOOK LEX - ORQUESTRAÇÃO"
   hosts: "{{ hostname | default('localhost') }}"
   gather_facts: true
@@ -14,7 +13,7 @@
     #   tags: [validate_prerequisites]
     
     # 🔑 Etapa configuração Checkout
-    - import_tasks: tasks/checkout.yml
+    - import_tasks: tasks/checkout/main.yml
       tags: [checkout]
     
     # # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
