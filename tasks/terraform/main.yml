@@ -1,15 +1,15 @@
 ---
-- name: "Atualiza valores do TFVARS"
-  ansible.builtin.template:
-    src: templates/terraform.tfvars.j2
-    dest: "{{ local_clone_path }}/terraform.tfvars"
-  tags: ["cnfg_terraform" , "deploy_bot"]
+# - name: "Atualiza valores do TFVARS"
+#   ansible.builtin.template:
+#     src: templates/terraform.tfvars.j2
+#     dest: "{{ local_clone_path }}/terraform.tfvars"
+#   tags: ["cnfg_terraform" , "deploy_bot"]
 
-- name: Define configurações de backend do Terraform
-  ansible.builtin.template:
-    src: templates/backend.tf.j2
-    dest: ./terraform/backend.tf
-  tags: ["cnfg_terraform" , "deploy_bot"]
+# - name: Define configurações de backend do Terraform
+#   ansible.builtin.template:
+#     src: templates/backend.tf.j2
+#     dest: "{{ local_clone_path }}/backend.tf"
+#   tags: ["cnfg_terraform" , "deploy_bot"]
 
 - name: Inicializar Terraform
   ansible.builtin.command:
@@ -18,10 +18,9 @@
   tags: ["deploy_bot", "destroy_bot"]
 
 - name: 📦 Executar Terraform Plan sem ANSI
-  ansible.builtin.shell: |
-    TF_IN_AUTOMATION=true terraform plan -var-file=terraform.tfvars
+  ansible.builtin.shell: "TF_IN_AUTOMATION=true terraform plan -var-file={{ var_file }}"
   args:
-    chdir: "{{ local_clone_path }} /"
+    chdir: "{{ local_clone_path }}/"
   register: terraform_plan_result
   ignore_errors: true
   tags: ["terraform_plan", "deploy_bot"]
@@ -42,45 +41,45 @@
 #     cmd: terraform apply -auto-approve tfplan
 #     chdir: /caminho/para/seu/infra
 
-- name: 📦 Executar Terraform Apply sem ANSI
-  ansible.builtin.shell: |
-    TF_IN_AUTOMATION=true terraform apply -auto-approve -var-file=terraform.tfvars
-  args:
-    chdir: "{{ local_clone_path }}"
-  register: terraform_apply_result
-  ignore_errors: true
-  tags: ["terraform_apply", "deploy_bot"]
+# - name: 📦 Executar Terraform Apply sem ANSI
+#   ansible.builtin.shell: |
+#     TF_IN_AUTOMATION=true terraform apply -auto-approve -var-file=terraform.tfvars
+#   args:
+#     chdir: "{{ local_clone_path }}"
+#   register: terraform_apply_result
+#   ignore_errors: true
+#   tags: ["terraform_apply", "deploy_bot"]
 
-- name: 📄 Mostrar STDOUT (resultado do apply)
-  debug:
-    var: terraform_apply_result.stdout_lines
-  tags: ["terraform_apply", "deploy_bot"]
+# - name: 📄 Mostrar STDOUT (resultado do apply)
+#   debug:
+#     var: terraform_apply_result.stdout_lines
+#   tags: ["terraform_apply", "deploy_bot"]
 
-- name: ❌ Mostrar STDERR (caso erro)
-  debug:
-    var: terraform_apply_result.stderr_lines
-  when: terraform_apply_result.rc != 0
-  tags: ["terraform_apply", "deploy_bot"]
+# - name: ❌ Mostrar STDERR (caso erro)
+#   debug:
+#     var: terraform_apply_result.stderr_lines
+#   when: terraform_apply_result.rc != 0
+#   tags: ["terraform_apply", "deploy_bot"]
 
 
-# terraform destroy
+# # terraform destroy
 
-- name: 📦 Executar Terraform Destroy sem ANSI
-  ansible.builtin.shell: |
-    TF_IN_AUTOMATION=true terraform destroy -auto-approve -var-file=terraform.tfvars
-  args:
-    chdir: "{{ local_clone_path }}/ "
-  register: terraform_destroy_result
-  ignore_errors: true
-  tags: ["terraform_destroy", "destroy_bot"]
+# - name: 📦 Executar Terraform Destroy sem ANSI
+#   ansible.builtin.shell: |
+#     TF_IN_AUTOMATION=true terraform destroy -auto-approve -var-file=terraform.tfvars
+#   args:
+#     chdir: "{{ local_clone_path }}/ "
+#   register: terraform_destroy_result
+#   ignore_errors: true
+#   tags: ["terraform_destroy", "destroy_bot"]
 
-- name: 📄 Mostrar STDOUT (resultado do destroy)
-  debug:
-    var: terraform_destroy_result.stdout_lines
-  tags: ["terraform_destroy", "destroy_bot"]
+# - name: 📄 Mostrar STDOUT (resultado do destroy)
+#   debug:
+#     var: terraform_destroy_result.stdout_lines
+#   tags: ["terraform_destroy", "destroy_bot"]
 
-- name: ❌ Mostrar STDERR (caso erro)
-  debug:
-    var: terraform_destroy_result.stderr_lines
-  when: terraform_destroy_result.rc != 0
-  tags: ["terraform_destroy", "destroy_bot"]
+# - name: ❌ Mostrar STDERR (caso erro)
+#   debug:
+#     var: terraform_destroy_result.stderr_lines
+#   when: terraform_destroy_result.rc != 0
+#   tags: ["terraform_destroy", "destroy_bot"]
