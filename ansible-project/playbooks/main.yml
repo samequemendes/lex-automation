@@ -11,7 +11,13 @@
     aws_region: "us-east-1"
 
   roles:
-    - { role: github_checkout, tags: ['checkout'] }
-    - { role: aws_auth, tags: ['aws'] }
-    - { role: terraform_exec, tags: ['terraform'] }
-    - { role: resumo_final, tags: ['resumo'] }
+    - role: github_checkout
+      vars:
+        repo_url: "{{ github_repo_url }}"
+        clone_path: "{{ local_clone_path }}"
+      tags: ['checkout']
+
+    # - role: github_checkout
+    # - { role: aws_auth, tags: ['aws'] }
+    # - { role: terraform_exec, tags: ['terraform'] }
+    # - { role: resumo_final, tags: ['resumo'] }

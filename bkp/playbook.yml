@@ -8,10 +8,18 @@
     - vars/config.yml
 
   tasks:
-
-    # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
-    - import_tasks: tasks/deploy_bot.yml
-      tags: [deploy_terraform]
+    
+    # # 📝 Etapa de validação de pré-requisitos
+    # - import_tasks: tasks/validate_prerequisites.yml
+    #   tags: [validate_prerequisites]
+    
+    # 🔑 Etapa configuração Checkout
+    - import_tasks: tasks/checkout.yml
+      tags: [checkout]
+    
+    # # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
+    # - import_tasks: tasks/deploy_bot.yml
+    #   tags: [deploy_terraform]
 
     # 🧾 Etapa de listagem de bots (se quiser reativar depois)
     # - import_tasks: tasks/list_bot.yml

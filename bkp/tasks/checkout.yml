@@ -1,0 +1,47 @@
+- tasks:
+  - name: Clonar repositório do GitHub
+    git:
+      repo: "{{ github_repo_url }}"
+      dest: "{{ local_clone_path }}"
+      version: main
+      force: yes
+    register: git_clone_result
+    failed_when: git_clone_result.failed is defined
+    notify: retry clone with alternative method
+
+- name: Validar se o clone foi bem-sucedido
+  assert:
+    that:
+      - git_clone_result is defined
+      - git_clone_result.failed is not defined
+      - git_clone_result.after is defined
+    fail_msg: "Falha ao clonar o repositório. Tentativa alternativa será executada pelo handler."
+    success_msg: "Repositório clonado com sucesso."
+
+- name: Exibir detalhes do resultado do clone
+  debug:
+    var: git_clone_result
+
+
+# Handler para tentar clonar novamente com um método alternativo
+- handlers:
+    - name: retry clone with alternative method
+      block:
+    - name: Tentando clonar com método alternativo (fallback)
+      git:
+        repo: "{{ github_repo_url_fallback }}"
+        dest: "{{ fallback_clone_path }}"
+        version: main
+        force: yes
+      register: fallback_result
+      failed_when: fallback_result.failed is defined
+
+    - name: Mostrar resultado do clone alternativo
+      debug:
+        msg:
+          - "Clonado com sucesso via fallback: {{ fallback_result.dest }}"
+          - "Branch: {{ fallback_result.before }}"
+  rescue:
+    - name: Falha total no clone (original e alternativo)
+      fail:
+        msg: "Clone do repositório falhou em ambas as tentativas. Verifique credenciais ou URLs."
