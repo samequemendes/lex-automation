@@ -1,0 +1,21 @@
+---
+- name: retry clone with alternative method
+  block:
+    - name: Tentando clonar com método alternativo (fallback)
+      git:
+        repo: "{{ github_repo_url_fallback }}"
+        dest: "{{ fallback_clone_path }}"
+        version: main
+        force: yes
+      register: fallback_result
+      failed_when: fallback_result.failed is defined
+
+    - name: Mostrar resultado do clone alternativo
+      debug:
+        msg:
+          - "Clonado com sucesso via fallback: {{ fallback_result.dest }}"
+          - "Branch: {{ fallback_result.before }}"
+  rescue:
+    - name: Falha total no clone (original e alternativo)
+      fail:
+        msg: "Clone do repositório falhou em ambas as tentativas. Verifique credenciais ou URLs."
