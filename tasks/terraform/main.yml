@@ -5,11 +5,11 @@
 #     dest: "{{ local_clone_path }}/terraform.tfvars"
 #   tags: ["cnfg_terraform" , "deploy_bot"]
 
-# - name: Define configurações de backend do Terraform
-#   ansible.builtin.template:
-#     src: templates/backend.tf.j2
-#     dest: "{{ local_clone_path }}/backend.tf"
-#   tags: ["cnfg_terraform" , "deploy_bot"]
+- name: Define configurações de backend do Terraform
+  ansible.builtin.template:
+    src: templates/backend.tf.j2
+    dest: "{{ local_clone_path }}/backend.tf"
+  tags: ["cnfg_terraform" , "deploy_bot"]
 
 - name: Inicializar Terraform
   ansible.builtin.command:
@@ -17,7 +17,7 @@
     chdir: "{{ local_clone_path }}/"
   tags: ["deploy_bot", "destroy_bot"]
 
-- name: 📦 Executar Terraform Plan sem ANSI
+- name: 📦 Executar Terraform Plan
   ansible.builtin.shell: "TF_IN_AUTOMATION=true terraform plan -var-file={{ var_file }}"
   args:
     chdir: "{{ local_clone_path }}/"
@@ -35,11 +35,6 @@
     var: terraform_plan_result.stderr_lines
   when: terraform_plan_result.rc != 0
   tags: ["terraform_plan", "deploy_bot"]
-
-# - name: Aplicar Terraform
-#   ansible.builtin.command:
-#     cmd: terraform apply -auto-approve tfplan
-#     chdir: /caminho/para/seu/infra
 
 # - name: 📦 Executar Terraform Apply sem ANSI
 #   ansible.builtin.shell: |
