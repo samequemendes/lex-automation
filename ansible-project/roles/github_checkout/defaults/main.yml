@@ -1,4 +1,4 @@
-github_repo_url: "https://github.com/sua-conta/seu-repo.git"
-github_repo_url_fallback: "git@github.com:sua-conta/seu-repo.git"
-local_clone_path: "/tmp/repositorio-clonado"
-fallback_clone_path: "/tmp/repositorio-clonado-fallback"
+github_repo_url: "https://github.com/samequemendes/amazon-lex-v2-example.git"
+github_repo_url_fallback: "git@github.com:samequemendes/amazon-lex-v2-example.git"
+local_clone_path: "./tmp/repositorio-clonado"
+fallback_clone_path: "./tmp/repositorio-clonado-fallback"
