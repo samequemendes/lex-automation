@@ -1,3 +1,4 @@
 ./terraform-repo/
 .vscode/
 .ansible
+/terraform-repo/
