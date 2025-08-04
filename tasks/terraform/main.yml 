@@ -1,0 +1,118 @@
+- name: Verificar se o Terraform já está instalado
+  ansible.builtin.command: terraform --version
+  register: terraform_version
+  ignore_errors: yes
+  tags: ["setup_terraform" , "deploy_bot"]
+
+- name: Informar que o Terraform já está instalado
+  ansible.builtin.debug:
+    msg: "Terraform já está instalado: {{ terraform_version.stdout_lines[0] }}"
+  when: terraform_version.rc == 0
+  tags: ["setup_terraform" , "deploy_bot"]
+
+- name: Informar que o Terraform não está instalado e iniciar download
+  ansible.builtin.debug:
+    msg: "Terraform não está instalado. Iniciando download e instalação..."
+  when: terraform_version.rc != 0
+  tags: ["setup_terraform" , "deploy_bot"]
+
+- name: Instalar Terraform se não existir
+  ansible.builtin.shell: |
+    curl -fsSL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip
+    unzip terraform.zip
+    mv terraform /usr/local/bin/
+  when: terraform_version.rc != 0
+  tags: ["setup_terraform" , "deploy_bot"]
+
+- name: "Clonar repositório do Terraform"
+  ansible.builtin.git:
+    repo: "{{ terraform_repo_url }}"
+    dest: ./terraform/
+    version: main
+  tags: ["setup_terraform" , "deploy_bot"]
+
+- name: "Atualiza valores do TFVARS"
+  ansible.builtin.template:
+    src: templates/terraform.tfvars.j2
+    dest: ./terraform/terraform.tfvars
+  tags: ["cnfg_terraform" , "deploy_bot"]
+
+- name: Define configurações de backend do Terraform
+  ansible.builtin.template:
+    src: templates/backend.tf.j2
+    dest: ./terraform/backend.tf
+  tags: ["cnfg_terraform" , "deploy_bot"]
+
+- name: Inicializar Terraform
+  ansible.builtin.command:
+    cmd: terraform init
+    chdir: "{{ local_clone_path }}/"
+  tags: ["deploy_bot", "destroy_bot"]
+
+- name: 📦 Executar Terraform Plan sem ANSI
+  ansible.builtin.shell: |
+    TF_IN_AUTOMATION=true terraform plan -var-file=terraform.tfvars
+  args:
+    chdir: "{{ local_clone_path }} /"
+  register: terraform_plan_result
+  ignore_errors: true
+  tags: ["terraform_plan", "deploy_bot"]
+
+- name: 📄 Mostrar STDOUT (resultado do plan)
+  debug:
+    var: terraform_plan_result.stdout_lines
+  tags: ["terraform_plan", "deploy_bot"]
+
+- name: ❌ Mostrar STDERR (caso erro)
+  debug:
+    var: terraform_plan_result.stderr_lines
+  when: terraform_plan_result.rc != 0
+  tags: ["terraform_plan", "deploy_bot"]
+
+# - name: Aplicar Terraform
+#   ansible.builtin.command:
+#     cmd: terraform apply -auto-approve tfplan
+#     chdir: /caminho/para/seu/infra
+
+- name: 📦 Executar Terraform Apply sem ANSI
+  ansible.builtin.shell: |
+    TF_IN_AUTOMATION=true terraform apply -auto-approve -var-file=terraform.tfvars
+  args:
+    chdir: "{{ local_clone_path }}"
+  register: terraform_apply_result
+  ignore_errors: true
+  tags: ["terraform_apply", "deploy_bot"]
+
+- name: 📄 Mostrar STDOUT (resultado do apply)
+  debug:
+    var: terraform_apply_result.stdout_lines
+  tags: ["terraform_apply", "deploy_bot"]
+
+- name: ❌ Mostrar STDERR (caso erro)
+  debug:
+    var: terraform_apply_result.stderr_lines
+  when: terraform_apply_result.rc != 0
+  tags: ["terraform_apply", "deploy_bot"]
+
+
+# terraform destroy
+
+- name: 📦 Executar Terraform Destroy sem ANSI
+  ansible.builtin.shell: |
+    TF_IN_AUTOMATION=true terraform destroy -auto-approve -var-file=terraform.tfvars
+  args:
+    chdir: "{{ local_clone_path }}/ "
+  register: terraform_destroy_result
+  ignore_errors: true
+  tags: ["terraform_destroy", "destroy_bot"]
+
+- name: 📄 Mostrar STDOUT (resultado do destroy)
+  debug:
+    var: terraform_destroy_result.stdout_lines
+  tags: ["terraform_destroy", "destroy_bot"]
+
+- name: ❌ Mostrar STDERR (caso erro)
+  debug:
+    var: terraform_destroy_result.stderr_lines
+  when: terraform_destroy_result.rc != 0
+  tags: ["terraform_destroy", "destroy_bot"]

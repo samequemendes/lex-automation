@@ -1,6 +1,6 @@
 terraform_repo_url: "https://github.com/samequemendes/terraform-aws-lex-examples.git"
 branch: "main"
-terraform_dir: "./terraform/"
+terraform_dir: "./terraform-repo/"
 project_name: "amazon-lex-automation"
 environment: "hml"
 region: "us-east-1"
