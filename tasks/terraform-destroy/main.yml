@@ -61,7 +61,7 @@
 - name: 📦 Executar Terraform Destroy sem ANSI
   ansible.builtin.shell: "TF_IN_AUTOMATION=true terraform destroy -var-file={{ var_file }} -auto-approve"
   args:
-    chdir: "{{ local_clone_path }}/ "
+    chdir: "{{ local_clone_path }}/"
   register: terraform_destroy_result
   ignore_errors: true
   tags: ["terraform_destroy", "destroy_bot"]
