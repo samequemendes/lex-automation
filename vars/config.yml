@@ -1,16 +1,16 @@
-terraform_repo_url: "https://github.com/samequemendes/terraform-aws-lex-examples.git"
-branch: "main"
+# Configuration variables for Terraform automation with Amazon Lex
+branch_repo: "main"
 terraform_dir: "./terraform-repo/"
 project_name: "amazon-lex-automation"
 environment: "hml"
 region: "us-east-1"
-profile_AWS: "AdministratorAccess-022499044898"
+
 backend_bucket: "samequemendes-terraform-tf-states"
 backend_key: "amazon-lex/terraform.tfstate"
 backend_region: "us-east-1"
-bot_id: "WMZQH0M4SQ"
-bot_name: "WMZQH0M4SQ-importado"
+#bot_name: "WMZQH0M4SQ-importado"
 role_arn: "arn:aws:iam::743065069150:role/poc-role-amazon-lex-sameque-mendes"
+var_file: "variables/hml.tfvars"
 
 # GitHub repository configuration
 github_repo_url: "https://github.com/samequemendes/amazon-lex-v2-example.git"
