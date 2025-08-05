@@ -1,0 +1,31 @@
+- name: Clonar repositório com fallback
+  block:
+    - name: Clonar repositório principal
+      git:
+        repo: "{{ github_repo_url }}"
+        dest: "{{ local_clone_path }}"
+        version: "{{ branch_repo }}"
+        force: yes
+      register: main_clone_result
+      failed_when: main_clone_result.failed is defined and main_clone_result.failed
+
+  rescue:
+    - name: Tentar clone com repositório alternativo
+      git:
+        repo: "{{ github_repo_url_fallback }}"
+        dest: "{{ fallback_clone_path }}"
+        version: "{{ branch_repo }}"
+        force: yes
+      register: fallback_result
+      failed_when: fallback_result.failed is defined and fallback_result.failed
+
+    - name: Informar sucesso do fallback
+      debug:
+        msg:
+          - "Clonado com sucesso via fallback: {{ fallback_result.dest }}"
+          - "Branch: {{ fallback_result.before }}"
+
+  always:
+    - name: Debug final
+      debug:
+        msg: "Clone executado. Verifique qual repositório foi utilizado."

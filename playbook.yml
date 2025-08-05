@@ -1,4 +1,3 @@
----
 - name: "PLAYBOOK LEX - ORQUESTRAÇÃO"
   hosts: "{{ hostname | default('localhost') }}"
   gather_facts: true
@@ -8,22 +7,34 @@
     - vars/config.yml
 
   tasks:
-
+    
+    # # 📝 Etapa de validação de pré-requisitos
+    # - import_tasks: tasks/validate_prerequisites.yml
+    #   tags: [validate_prerequisites]
+    
+    # 🔑 Etapa configuração Checkout
+    - import_tasks: tasks/checkout/main.yml
+      tags: [checkout,deploy,destroy]
+    
     # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
-    - import_tasks: tasks/deploy_bot.yml
-      tags: [deploy_terraform]
+    - import_tasks: tasks/terraform-apply/main.yml
+      tags: [deploy_terraform, deploy]
+
+    # 📦 Etapa de Destroy (ex: criar bot, intents, slots, etc)
+    - import_tasks: tasks/terraform-destroy/main.yml
+      tags: [destroy_terraform, destroy]
 
     # 🧾 Etapa de listagem de bots (se quiser reativar depois)
     # - import_tasks: tasks/list_bot.yml
     #   tags: [list_bots]
 
-    # 📤 Exportação do bot da conta origem
-    - import_tasks: tasks/export_bot.yml
-      tags: [export_bot]
+    # # 📤 Exportação do bot da conta origem
+    # - import_tasks: tasks/export_bot.yml
+    #   tags: [export_bot]
 
-    # 📥 Importação do bot na conta destino
-    - import_tasks: tasks/import_bot.yml
-      tags: [import_bot]
+    # # 📥 Importação do bot na conta destino
+    # - import_tasks: tasks/import_bot.yml
+    #   tags: [import_bot]
 
     # ✅ Mensagem final
     - name: "✅ Mensagem de conclusão"
