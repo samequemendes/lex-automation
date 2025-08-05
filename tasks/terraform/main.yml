@@ -36,32 +36,31 @@
   when: terraform_plan_result.rc != 0
   tags: ["terraform_plan", "deploy_bot"]
 
-# - name: 📦 Executar Terraform Apply sem ANSI
-#   ansible.builtin.shell: |
-#     TF_IN_AUTOMATION=true terraform apply -auto-approve -var-file=terraform.tfvars
-#   args:
-#     chdir: "{{ local_clone_path }}"
-#   register: terraform_apply_result
-#   ignore_errors: true
-#   tags: ["terraform_apply", "deploy_bot"]
+- name: 📦 Executar Terraform Apply
+  ansible.builtin.shell: "TF_IN_AUTOMATION=true terraform apply -var-file={{ var_file }} -auto-approve"
+  args:
+    chdir: "{{ local_clone_path }}/"
+  register: terraform_apply_result
+  ignore_errors: true
+  tags: ["terraform_apply", "deploy_bot"]
 
-# - name: 📄 Mostrar STDOUT (resultado do apply)
-#   debug:
-#     var: terraform_apply_result.stdout_lines
-#   tags: ["terraform_apply", "deploy_bot"]
+- name: 📄 Mostrar STDOUT (resultado do apply)
+  debug:
+    var: terraform_apply_result.stdout_lines
+  tags: ["terraform_apply", "deploy_bot"]
 
-# - name: ❌ Mostrar STDERR (caso erro)
-#   debug:
-#     var: terraform_apply_result.stderr_lines
-#   when: terraform_apply_result.rc != 0
-#   tags: ["terraform_apply", "deploy_bot"]
+- name: ❌ Mostrar STDERR (caso erro)
+  debug:
+    var: terraform_apply_result.stderr_lines
+  when: terraform_apply_result.rc != 0
+  tags: ["terraform_apply", "deploy_bot"]
 
 
 # # terraform destroy
 
 # - name: 📦 Executar Terraform Destroy sem ANSI
 #   ansible.builtin.shell: |
-#     TF_IN_AUTOMATION=true terraform destroy -auto-approve -var-file=terraform.tfvars
+#     "TF_IN_AUTOMATION=true terraform destroy -var-file={{ var_file }}"
 #   args:
 #     chdir: "{{ local_clone_path }}/ "
 #   register: terraform_destroy_result
