@@ -12,6 +12,11 @@
     # - import_tasks: tasks/validate_prerequisites.yml
     #   tags: [validate_prerequisites]
     
+    # Authentication AWS
+    - name: "🔑 Autenticação AWS"
+      import_tasks: tasks/auth-AWS/main.yml
+      tags: [auth]
+
     # 🔑 Etapa configuração Checkout
     - import_tasks: tasks/checkout/main.yml
       tags: [checkout,deploy,destroy]
