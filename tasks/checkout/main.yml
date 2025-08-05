@@ -4,7 +4,7 @@
       git:
         repo: "{{ github_repo_url }}"
         dest: "{{ local_clone_path }}"
-        version: main
+        version: {{ branch_repo }}
         force: yes
       register: main_clone_result
       failed_when: main_clone_result.failed is defined and main_clone_result.failed
@@ -14,7 +14,7 @@
       git:
         repo: "{{ github_repo_url_fallback }}"
         dest: "{{ fallback_clone_path }}"
-        version: main
+        version: {{ branch_repo }}
         force: yes
       register: fallback_result
       failed_when: fallback_result.failed is defined and fallback_result.failed
