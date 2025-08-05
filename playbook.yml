@@ -14,11 +14,15 @@
     
     # 🔑 Etapa configuração Checkout
     - import_tasks: tasks/checkout/main.yml
-      tags: [checkout,deploy]
+      tags: [checkout,deploy,destroy]
     
     # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
-    - import_tasks: tasks/terraform/main.yml
+    - import_tasks: tasks/terraform-apply/main.yml
       tags: [deploy_terraform, deploy]
+
+    # 📦 Etapa de Destroy (ex: criar bot, intents, slots, etc)
+    - import_tasks: tasks/terraform-destroy/main.yml
+      tags: [destroy_terraform, destroy]
 
     # 🧾 Etapa de listagem de bots (se quiser reativar depois)
     # - import_tasks: tasks/list_bot.yml
