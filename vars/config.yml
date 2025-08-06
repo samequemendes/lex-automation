@@ -4,7 +4,7 @@ terraform_dir: "./terraform-repo/"
 project_name: "amazon-lex-automation"
 environment: "hml"
 region: "us-east-1"
-
+aws_assume_role_arn: "arn:aws:iam::743065069150:role/CrossAccountMasterRole"
 backend_bucket: "samequemendes-terraform-tf-states"
 backend_key: "amazon-lex/terraform.tfstate"
 backend_region: "us-east-1"
