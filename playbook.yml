@@ -15,7 +15,7 @@
     # Authentication AWS
     - name: "🔑 Autenticação AWS"
       import_tasks: tasks/auth-AWS/main.yml
-      tags: [auth]
+      tags: [auth,deploy,destroy]
 
     # 🔑 Etapa configuração Checkout
     - import_tasks: tasks/checkout/main.yml
