@@ -1,8 +1,8 @@
-- name: "❌ Verificar se o arquivo de exportação existe"
-  stat:
+---
+- name: 📂 Verificar se o arquivo exportado existe
+  ansible.builtin.stat:
     path: "{{ bot_export_path }}"
   register: bot_zip_check
-  tags: import_bot
 
 - name: "📦 Validar existência do arquivo para importação"
   fail:
@@ -18,9 +18,9 @@
   changed_when: false
   tags: import_bot
   environment:
-    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "📥 Extrair importId e uploadUrl"
   set_fact:
@@ -43,7 +43,7 @@
       {{
         {
           "botImportSpecification": {
-            "botName": bot_name,
+            "botName": bot_import_name,
             "roleArn": role_arn,
             "dataPrivacy": {
               "childDirected": false
@@ -65,9 +65,9 @@
   changed_when: true
   tags: import_bot
   environment:
-    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "⏳ Aguardar conclusão da importação"
   shell: >
@@ -84,9 +84,9 @@
   changed_when: false
   tags: import_bot
   environment:
-    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "📋 Mostrar status final da importação"
   debug:
@@ -107,9 +107,9 @@
   changed_when: false
   tags: import_bot
   environment:
-    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "🛑 Mostrar motivo da falha"
   debug:

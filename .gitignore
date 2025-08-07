@@ -2,3 +2,5 @@
 .vscode/
 .ansible
 /terraform-repo/
+./artifacts/
+artifacts/
