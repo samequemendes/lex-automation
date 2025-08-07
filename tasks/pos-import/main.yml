@@ -4,12 +4,15 @@
     aws lexv2-models create-bot-version \
       --bot-id {{ bot_id }} \
       --region {{ region }} \
-      --profile {{ aws_profile }} \
       --bot-version-locale-specification '{"pt_BR":{"sourceBotVersion":"DRAFT"}}' \
       --query 'botVersion' \
       --output text
   register: bot_version
   changed_when: true
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "⏳ Aguardar a versão '{{ bot_version.stdout }}' ficar disponível"
   shell: |
@@ -18,7 +21,6 @@
         --bot-id {{ bot_id }} \
         --bot-version {{ bot_version.stdout }} \
         --region {{ region }} \
-        --profile {{ aws_profile }} \
         --query 'botStatus' \
         --output text)
 
@@ -33,6 +35,10 @@
       sleep 5
     done
   changed_when: false
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "🔁 Criar alias '{{ alias_name }}' apontando para versão '{{ bot_version.stdout }}'"
   shell: |
@@ -46,6 +52,10 @@
       --output text
   register: bot_alias_id
   changed_when: true
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "⏳ Aguardar alias '{{ alias_name }}' ficar disponível"
   shell: |
@@ -54,7 +64,6 @@
         --bot-id {{ bot_id }} \
         --bot-alias-id {{ bot_alias_id.stdout }} \
         --region {{ region }} \
-        --profile {{ aws_profile }} \
         --query 'botAliasStatus' \
         --output text)
 
@@ -69,6 +78,10 @@
       sleep 5
     done
   changed_when: false
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "🎉 Exibir resultado final"
   debug:

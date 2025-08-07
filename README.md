@@ -20,7 +20,9 @@ Scripts e playbook para exportar um bot do Amazon Lex V2 de uma conta e importar
 ## Execução com Ansible
 
 ```bash
-ansible-playbook playbook.yml
+ansible-playbook playbook-deploy.yml --tag deploy
+ansible-playbook playbook-migration.yml --tag export
+ansible-playbook playbook-deploy.yml --tag destroy
 ```
 
 ## A cada nova alteração de intents, você precisa:
