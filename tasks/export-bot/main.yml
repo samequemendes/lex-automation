@@ -10,19 +10,21 @@
     --resource-specification botExportSpecification={{ '{botId=' + bot_id + ',botVersion=DRAFT}' }}
     --file-format LexJson
     --region us-east-1
-    --profile {{ profile_AWS }}
     --query 'exportId'
     --output text
   register: export_result
   changed_when: false
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "⏳ Aguardar exportação completar (polling)"
   shell: >
     aws lexv2-models describe-export
     --export-id {{ export_result.stdout }}
     --region us-east-1
-    --profile {{ profile_AWS }}
     --query 'exportStatus'
     --output text
   register: export_status
@@ -32,35 +34,54 @@
   failed_when: export_status.stdout == "Failed"
   changed_when: false
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "📥 Obter download URL da exportação"
   shell: >
     aws lexv2-models describe-export
     --export-id {{ export_result.stdout }}
     --region us-east-1
-    --profile {{ profile_AWS }}
     --query 'downloadUrl'
     --output text
   register: download_url
   changed_when: false
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "🕓 Definir data atual no formato YYYY-MM-DD"
   set_fact:
     export_date: "{{ ansible_date_time.date }}"
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "📄 Definir nome do arquivo de exportação"
   set_fact:
     bot_export_filename: "{{ export_date }}-{{ bot_id }}.zip"
     bot_export_path: "artifacts/{{ export_date }}-{{ bot_id }}.zip"
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "📁 Garantir diretório de artefatos"
   file:
     path: artifacts
     state: directory
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "⬇️ Baixar bot exportado para {{ bot_export_path }}"
   get_url:
@@ -68,8 +89,16 @@
     dest: "{{ bot_export_path }}"
     mode: '0644'
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "✅ Confirmar exportação em {{ bot_export_path }}"
   debug:
     msg: "Bot exportado com sucesso para '{{ bot_export_path }}'"
   tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"

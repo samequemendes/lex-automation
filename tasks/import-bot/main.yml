@@ -14,10 +14,13 @@
   shell: >
     aws lexv2-models create-upload-url
     --region us-east-1
-    --profile {{ profile_AWS }}
   register: upload_result
   changed_when: false
   tags: import_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
 
 - name: "📥 Extrair importId e uploadUrl"
   set_fact:
@@ -54,7 +57,6 @@
 - name: "🚀 Iniciar importação do bot"
   shell: >
     aws lexv2-models start-import
-    --profile {{ profile_AWS }}
     --import-id "{{ import_id }}"
     --resource-specification '{{ bot_specification_json }}'
     --merge-strategy FailOnConflict
@@ -62,15 +64,16 @@
   register: import_start
   changed_when: true
   tags: import_bot
-
-
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
 
 - name: "⏳ Aguardar conclusão da importação"
   shell: >
     aws lexv2-models describe-import
     --import-id "{{ import_id }}"
     --region us-east-1
-    --profile {{ profile_AWS }}
     --query 'importStatus'
     --output text
   register: import_status
@@ -80,6 +83,10 @@
   failed_when: import_status.stdout == "Failed"
   changed_when: false
   tags: import_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
 
 - name: "📋 Mostrar status final da importação"
   debug:
@@ -99,6 +106,10 @@
   register: failure_reason
   changed_when: false
   tags: import_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ dest_aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ dest_aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ dest_aws_session_token }}"
 
 - name: "🛑 Mostrar motivo da falha"
   debug:

@@ -1,0 +1,36 @@
+- name: "PLAYBOOK LEX - Migration"
+  hosts: "{{ hostname | default('localhost') }}"
+  gather_facts: true
+  become: false
+  vars_files:
+    - vars/main.yml
+    - vars/config.yml
+
+  tasks:
+    
+    # # 📝 Etapa de validação de pré-requisitos
+    # - import_tasks: tasks/validate_prerequisites.yml
+    #   tags: [validate_prerequisites]
+    
+    # Authentication AWS
+    - name: "🔑 Autenticação AWS Origem"
+      import_tasks: tasks/auth-AWS/main.yml
+      tags: [auth,origem,export]
+
+    # 📤 Exportação do bot da conta origem
+    - import_tasks: tasks/export-bot/main.yml
+      tags: [origem,export]
+
+    # # 📝 Autenticação na conta de Destino
+    - name: "🔑 Autenticação AWS Destino"
+      import_tasks: tasks/auth-AWS-dest/main.yml
+      tags: [auth,destino,export]
+
+    # 📥 Importação do bot na conta destino
+    - import_tasks: tasks/import-bot/main.yml
+      tags: [destino,export]
+
+    # ✅ Mensagem final
+    - name: "✅ Mensagem de conclusão"
+      debug:
+        msg: "Playbook de migração do Amazon Lex concluído com sucesso!"

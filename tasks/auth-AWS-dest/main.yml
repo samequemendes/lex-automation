@@ -1,0 +1,19 @@
+---
+# Assumir Role na AWS
+- name: Assume Role in AWS
+  sts_assume_role:
+    role_arn: "{{ dest_aws_assume_role_arn }}"
+    role_session_name: "Ansible-Lex-Session"
+    aws_profile: "AgentAssumeRole-743065069150"
+  register: assumed_role
+
+- name: configurar credenciais temporárias da conta AWS Destino
+  set_fact:
+    aws_access_key: "{{ assumed_role.sts_creds.dest_access_key }}"
+    aws_secret_key: "{{ assumed_role.sts_creds.dest_secret_key }}"
+    aws_session_token: "{{ assumed_role.sts_creds.dest_session_token }}"
+
+# Exibe credenciais recebidas
+- name: Exibir credenciais temporárias da Conta AWS Destino
+  debug:
+    msg: "Access Key: {{ aws_access_key }}, Secret Key: {{ aws_secret_key }}, Session Token: {{ aws_session_token }}"
