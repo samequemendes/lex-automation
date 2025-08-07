@@ -2,7 +2,7 @@
 # - name: "Atualiza valores do TFVARS"
 #   ansible.builtin.template:
 #     src: templates/terraform.tfvars.j2
-#     dest: "{{ local_clone_path }}/terraform.tfvars"
+#     dest: "{{ local_clone_path }}/{{ environment }}-terraform.tfvars"
 #   tags: ["cnfg_terraform" , "deploy_bot"]
 
 - name: Define configurações de backend do Terraform
@@ -10,6 +10,17 @@
     src: templates/backend.tf.j2
     dest: "{{ local_clone_path }}/backend.tf"
   tags: ["cnfg_terraform" , "deploy_bot"]
+
+- name: Checar quem sou eu com AWS CLI
+  shell: aws sts get-caller-identity
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+  register: identity_result
+
+- debug:
+    msg: "{{ identity_result.stdout }}"
 
 - name: Inicializar Terraform
   ansible.builtin.command:
@@ -51,6 +62,10 @@
   register: terraform_apply_result
   ignore_errors: true
   tags: ["terraform_apply", "deploy_bot"]
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: 📄 Mostrar STDOUT (resultado do apply)
   debug:

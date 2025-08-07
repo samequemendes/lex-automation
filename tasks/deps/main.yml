@@ -24,3 +24,8 @@
     mv terraform /usr/local/bin/
   when: terraform_version.rc != 0
   tags: ["setup_terraform" , "deploy_bot"]
+
+- name: Limpar diretorio para clone
+  ansible.builtin.file:
+    path: "{{ local_clone_path }}"
+    state: absent
