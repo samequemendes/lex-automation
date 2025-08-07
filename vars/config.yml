@@ -14,8 +14,8 @@ dest_aws_assume_role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole
 
 ### Lex bot settings
 # Lex bot configuration para migração
-bot_id: "7U02QDX2GI" # Input de dado {ID do Bot que deseja importar}
-bot_import_name: "WMZQH0M4SQ-importado" # Input de dado {Nome do Bot que deseja importar}
+bot_id: "PX10USOPN5" # Input de dado {ID do Bot que deseja importar}
+bot_import_name: "Bot-importado-conta-samequemendes" # Input de dado {Nome do Bot que deseja importar}
 role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole" # Assumir a Role criada na conta destino {Sugiro criar expressão para gerar a role de acordo com o id da conta}
 
 
