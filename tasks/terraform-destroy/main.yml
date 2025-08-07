@@ -16,6 +16,10 @@
     cmd: terraform init
     chdir: "{{ local_clone_path }}/"
   tags: ["deploy_bot", "destroy_bot"]
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: 📦 Executar Terraform Plan
   ansible.builtin.shell: "TF_IN_AUTOMATION=true terraform plan -var-file={{ var_file }}"
@@ -24,6 +28,10 @@
   register: terraform_plan_result
   ignore_errors: true
   tags: ["terraform_plan", "deploy_bot"]
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: 📄 Mostrar STDOUT (resultado do plan)
   debug:
@@ -65,6 +73,10 @@
   register: terraform_destroy_result
   ignore_errors: true
   tags: ["terraform_destroy", "destroy_bot"]
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: 📄 Mostrar STDOUT (resultado do destroy)
   debug:
