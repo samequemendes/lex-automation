@@ -1,25 +1,36 @@
 # Configuration variables for Terraform automation with Amazon Lex
-# Configurações para AWS
-project_name: "amazon-lex-automation"
-environment: "hml"
+
+### Variaveis Gerais
+# Variáveis gerais para o projeto
 region: "us-east-1"
+environment: "hml" # Input de dado
+
+
+### Configurações para AWS
+# Configurações Cross Account
+project_name: "amazon-lex-automation" # Input de dado
 aws_assume_role_arn: "arn:aws:iam::743065069150:role/CrossAccountMasterRole"
 dest_aws_assume_role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole"
 
-# Lex bot configuration
-bot_id: "7U02QDX2GI"
-bot_import_name: "WMZQH0M4SQ-importado"
-role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole"
-var_file: "variables/hml.tfvars"
+### Lex bot settings
+# Lex bot configuration para migração
+bot_id: "7U02QDX2GI" # Input de dado {ID do Bot que deseja importar}
+bot_import_name: "WMZQH0M4SQ-importado" # Input de dado {Nome do Bot que deseja importar}
+role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole" # Assumir a Role criada na conta destino {Sugiro criar expressão para gerar a role de acordo com o id da conta}
 
-# GitHub repository configuration
-github_repo_url: "https://github.com/samequemendes/amazon-lex-v2-example.git"
+
+
+### GitHub repository configuration
+# Link do repositório GitHub e Repositório de fallback
+github_repo_url: "https://github.com/samequemendes/amazon-lex-v2-example.git" # Input de dado {URL do repositório GitHub que contém o código terraform}
 github_repo_url_fallback: "git@github.com:samequemendes/amazon-lex-v2-example.git"
-branch_repo: "main"
+branch_repo: "main" # Input de dado {Sugiro criar opção de versão do branch para futuras versões do bot}
 
-# Terraform configuration
+### Terraform configuration
+# Configurações de backend - versão - backend - variables
 local_clone_path: "./terraform-repo"
 fallback_clone_path: "./terraform-repo-fallback"
 backend_bucket: "samequemendes-terraform-tf-states"
 backend_key: "amazon-lex/terraform.tfstate"
 backend_region: "us-east-1"
+var_file: "variables/hml.tfvars" # Variáveis do bot
