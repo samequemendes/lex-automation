@@ -7,7 +7,7 @@
 - name: "📦 Iniciar exportação do bot"
   shell: >
     aws lexv2-models create-export
-    --resource-specification botExportSpecification={{ '{botId=' + bot_id + ',botVersion=DRAFT}' }}
+    --resource-specification botExportSpecification={{ '{botId=' + bot_id + ',botVersion=1}' }}
     --file-format LexJson
     --region us-east-1
     --query 'exportId'
