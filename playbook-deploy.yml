@@ -22,7 +22,7 @@
       tags: [checkout,deploy,destroy]
     
     # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
-    - import_tasks: tasks/terraform-apply/main.yml
+    - import_tasks: tasks/terraform-deploy/main.yml
       tags: [deploy_terraform, deploy]
 
     # 📦 Etapa de Destroy (ex: criar bot, intents, slots, etc)
