@@ -9,13 +9,13 @@ environment: "hml" # Input de dado
 ### Configurações para AWS
 # Configurações Cross Account
 project_name: "amazon-lex-automation" # Input de dado
-aws_assume_role_arn: "arn:aws:iam::743065069150:role/CrossAccountMasterRole"
+aws_assume_role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole"
 dest_aws_assume_role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole"
 
 ### Lex bot settings
 # Lex bot configuration para migração
 bot_id: "WPSVZVLS93" # Input de dado {ID do Bot que deseja importar}
-bot_import_name: "Bot-importado-pos" # Input de dado {Nome do Bot que deseja importar}
+bot_import_name: "Bot-automatizado" # Input de dado {Nome do Bot que deseja importar}
 role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole" # Assumir a Role criada na conta destino {Sugiro criar expressão para gerar a role de acordo com o id da conta}
 
 
@@ -30,7 +30,7 @@ branch_repo: "main" # Input de dado {Sugiro criar opção de versão do branch p
 # Configurações de backend - versão - backend - variables
 local_clone_path: "./terraform-repo"
 fallback_clone_path: "./terraform-repo-fallback"
-backend_bucket: "samequemendes-terraform-tf-states"
-backend_key: "amazon-lex/terraform.tfstate"
+backend_bucket: "its-on-terraform-tf-states"
+backend_key: "terraform-states/lexv2/terraform.tfstate"
 backend_region: "us-east-1"
 var_file: "variables/hml.tfvars" # Variáveis do bot
