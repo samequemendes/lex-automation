@@ -21,8 +21,7 @@ bot_import_name: "Bot-automatizado-importado" # Input de dado {Nome do Bot que d
 role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole" # Assumir a Role criada na conta destino {Sugiro criar expressão para gerar a role de acordo com o id da conta}
 bot_name: "Bot-automatizado" # Input de dado {Nome do Bot que deseja importar}
 lambda_function_arn: "arn:aws:lambda:us-east-1:022499044898:function:lambda-agendamento-console" # Input de dado {ARN da função Lambda que será associada ao bot}
-
-
+alias_name: "versao-gui"
 ### GitHub repository configuration
 # Link do repositório GitHub e Repositório de fallback
 github_repo_url: "https://github.com/samequemendes/amazon-lex-v2-example.git" # Input de dado {URL do repositório GitHub que contém o código terraform}

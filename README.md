@@ -75,6 +75,7 @@ Este projeto é distribuído sob a licença MIT.
 ansible-playbook playbook-deploy.yml --tag deploy
 ansible-playbook playbook-migration.yml --tag export
 ansible-playbook playbook-deploy.yml --tag destroy
+ansible-playbook playbook-deploy.yml --tag auth,pos_import -e bot_id="1KEHBD9NI8" -e alias_name="teste-alias-v0" -vvv
 ```
 
 ## A cada nova alteração de intents, você precisa:
