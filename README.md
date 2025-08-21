@@ -67,7 +67,7 @@ export AWS_SECRET_ACCESS_KEY=...
 
 ## 📁 Licença
 
-Este projeto é distribuído sob a licença MIT.
+Todos os direitos são reservados, propriedade intelectual.
 
 ## Execução com Ansible
 ### Deploy Bot
@@ -75,8 +75,6 @@ Este projeto é distribuído sob a licença MIT.
 ```bash
 ansible-playbook playbook-deploy.yml --tag deploy -e bot_name="nome-do-bot"
 ansible-playbook playbook-deploy.yml --tag destroy -e bot_name="nome-do-bot"
-
-ansible-playbook playbook-migration.yml --tag export -e bot_id="1KEHBD9NI8" -e bot_version="DRAFT" -e orig_account_id="022499044898" -e dest_account_id="743065069150"
 ```
 
 ### Exportação Bot
@@ -92,7 +90,7 @@ ansible-playbook playbook-migration.yml --tag export -e bot_id="1KEHBD9NI8" -e b
 - Criar uma nova versão
 - Atualizar o alias, se quiser apontar para a nova versão
 
-Possível através do script `pos-import-bot.sh`
+Possível através da tarefa pos-import { em desenvolvimento }
 
 # 📘 Variáveis do Projeto de Migração Amazon Lex V2
 
