@@ -1,7 +1,7 @@
 ---
 # - name: "Atualiza valores do TFVARS"
 #   ansible.builtin.template:
-#     src: templates/terraform.tfvars.j2
+#     src: templates/hml.tfvars.j2
 #     dest: "{{ local_clone_path }}/{{ environment }}-terraform.tfvars"
 #   tags: ["cnfg_terraform" , "deploy_bot"]
 

@@ -1,12 +1,21 @@
 ---
+# ✅ Cria a versão
 - name: "🚀 Criar nova versão do bot"
-  shell: |
-    aws lexv2-models create-bot-version \
-      --bot-id {{ bot_id }} \
-      --region {{ region }} \
-      --bot-version-locale-specification '{"pt_BR":{"sourceBotVersion":"DRAFT"}}' \
-      --query 'botVersion' \
-      --output text
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - create-bot-version
+      - --bot-id
+      - "{{ bot_id }}"
+      - --region
+      - "{{ region }}"
+      - --bot-version-locale-specification
+      - '{"pt_BR":{"sourceBotVersion":"DRAFT"}}'
+      - --query
+      - botVersion
+      - --output
+      - text
   register: bot_version
   changed_when: true
   environment:
@@ -14,70 +23,160 @@
     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
-- name: "⏳ Aguardar a versão '{{ bot_version.stdout }}' ficar disponível"
-  shell: |
-    while true; do
-      STATUS=$(aws lexv2-models describe-bot-version \
-        --bot-id {{ bot_id }} \
-        --bot-version {{ bot_version.stdout }} \
-        --region {{ region }} \
-        --query 'botStatus' \
-        --output text)
+# ⏳ Poll da versão (sem while)
+- name: "⏳ Aguardar versão '{{ bot_version.stdout }}' ficar Available"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - describe-bot-version
+      - --bot-id
+      - "{{ bot_id }}"
+      - --bot-version
+      - "{{ bot_version.stdout }}"
+      - --region
+      - "{{ region }}"
+      - --query
+      - botStatus
+      - --output
+      - text
+  register: version_status
+  changed_when: false
+  retries: 120
+  delay: 5
+  until: version_status.stdout == "Available"
+  failed_when: version_status.stdout == "Failed"
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
-      echo "📌 Status: $STATUS"
-
-      if [[ "$STATUS" == "Available" ]]; then
-        break
-      elif [[ "$STATUS" == "Failed" ]]; then
-        echo "❌ Criação da versão falhou!"
-        exit 1
-      fi
-      sleep 5
-    done
+# 🔎 Descobre se o alias existe
+- name: "🔎 Verificar se alias '{{ alias_name }}' existe"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - list-bot-aliases
+      - --bot-id
+      - "{{ bot_id }}"
+      - --region
+      - "{{ region }}"
+      - --query
+      - "botAliasSummaries[?botAliasName=='{{ alias_name }}'].botAliasId | [0]"
+      - --output
+      - text
+  register: existing_alias_id
   changed_when: false
   environment:
     AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
-- name: "🔁 Criar alias '{{ alias_name }}' apontando para versão '{{ bot_version.stdout }}'"
-  shell: |
-    aws lexv2-models create-bot-alias \
-      --bot-id {{ bot_id }} \
-      --bot-alias-name {{ alias_name }} \
-      --bot-version {{ bot_version.stdout }} \
-      --region {{ region }} \
-      --profile {{ aws_profile }} \
-      --query 'botAliasId' \
-      --output text
-  register: bot_alias_id
-  changed_when: true
+# 🔁 Criar alias (se NÃO existir) já com a Lambda
+- name: "🔁 Criar alias '{{ alias_name }}' com Lambda"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - create-bot-alias
+      - --bot-id
+      - "{{ bot_id }}"
+      - --bot-alias-name
+      - "{{ alias_name }}"
+      - --bot-version
+      - "{{ bot_version }}"
+      - --bot-alias-locale-settings
+      - >-
+        {"pt_BR":{
+          "enabled": true,
+          "codeHookSpecification":{
+            "lambdaCodeHook":{
+              "lambdaARN":"{{ lambda_function_arn }}",
+              "codeHookInterfaceVersion":"1.0"
+            }
+          }
+        }}
+      - --region
+      - "{{ region }}"
+      - --query
+      - botAliasId
+      - --output
+      - text
+  register: bot_alias_create
+  when: existing_alias_id.stdout in ["", "None", "null"]
   environment:
     AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
-- name: "⏳ Aguardar alias '{{ alias_name }}' ficar disponível"
-  shell: |
-    while true; do
-      STATUS=$(aws lexv2-models describe-bot-alias \
-        --bot-id {{ bot_id }} \
-        --bot-alias-id {{ bot_alias_id.stdout }} \
-        --region {{ region }} \
-        --query 'botAliasStatus' \
-        --output text)
+# ♻️ Atualizar alias (se JÁ existir) para apontar a versão e Lambda
+- name: "♻️ Atualizar alias '{{ alias_name }}' com Lambda"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - update-bot-alias
+      - --bot-id
+      - "{{ bot_id }}"
+      - --bot-alias-id
+      - "{{ existing_alias_id.stdout }}"
+      - --bot-version
+      - "{{ bot_version }}"
+      - --bot-alias-locale-settings
+      - >-
+        {"pt_BR":{
+          "enabled": true,
+          "codeHookSpecification":{
+            "lambdaCodeHook":{
+              "lambdaARN":"{{ lambda_function_arn }}",
+              "codeHookInterfaceVersion":"1.0"
+            }
+          }
+        }}
+      - --region
+      - "{{ region }}"
+      - --query
+      - botAliasId
+      - --output
+      - text
+  register: bot_alias_update
+  when: existing_alias_id.stdout not in ["", "None", "null"]
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
-      echo "📌 Status alias: $STATUS"
+# 📌 Normaliza o alias_id (criado ou atualizado)
+- name: "📌 Definir alias_id"
+  set_fact:
+    bot_alias_id: >-
+      {{ (bot_alias_create.stdout if (existing_alias_id.stdout in ["", "None", "null"])
+          else bot_alias_update.stdout) | trim }}
 
-      if [[ "$STATUS" == "Available" ]]; then
-        break
-      elif [[ "$STATUS" == "Failed" ]]; then
-        echo "❌ Criação do alias falhou!"
-        exit 1
-      fi
-      sleep 5
-    done
+# ⏳ Poll do alias
+- name: "⏳ Aguardar alias '{{ alias_name }}' ficar Available"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - describe-bot-alias
+      - --bot-id
+      - "{{ bot_id }}"
+      - --bot-alias-id
+      - "{{ bot_alias_id }}"
+      - --region
+      - "{{ region }}"
+      - --query
+      - botAliasStatus
+      - --output
+      - text
+  register: alias_status
   changed_when: false
+  retries: 120
+  delay: 5
+  until: alias_status.stdout == "Available"
+  failed_when: alias_status.stdout == "Failed"
   environment:
     AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
@@ -90,4 +189,4 @@
       🔗 Informações:
       - botId: {{ bot_id }}
       - botVersion: {{ bot_version.stdout }}
-      - alias: {{ alias_name }} (ID: {{ bot_alias_id.stdout }})
+      - alias: {{ alias_name }} (ID: {{ bot_alias_id }})

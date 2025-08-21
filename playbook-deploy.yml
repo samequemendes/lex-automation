@@ -22,7 +22,7 @@
       tags: [checkout,deploy,destroy]
     
     # 📦 Etapa de Deploy (ex: criar bot, intents, slots, etc)
-    - import_tasks: tasks/terraform-apply/main.yml
+    - import_tasks: tasks/terraform-deploy/main.yml
       tags: [deploy_terraform, deploy]
 
     # 📦 Etapa de Destroy (ex: criar bot, intents, slots, etc)
@@ -33,9 +33,9 @@
     # - import_tasks: tasks/list_bot.yml
     #   tags: [list_bots]
 
-    # # 📤 Exportação do bot da conta origem
-    # - import_tasks: tasks/export_bot.yml
-    #   tags: [export_bot]
+    # # 📤 Criação da versão do bot
+    # - import_tasks: tasks/pos-import/main.yml
+    #   tags: [deploy_terraform, deploy, pos_import]
 
     # # 📥 Importação do bot na conta destino
     # - import_tasks: tasks/import_bot.yml
@@ -45,3 +45,4 @@
     - name: "✅ Mensagem de conclusão"
       debug:
         msg: "Playbook de orquestração do Amazon Lex concluído com sucesso!"
+      tags: [deploy_terraform, deploy]
