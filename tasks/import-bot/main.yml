@@ -1,19 +1,31 @@
----
-- name: 📂 Verificar se o arquivo exportado existe
+- name: "📂 Verificar se o arquivo exportado existe"
   ansible.builtin.stat:
     path: "{{ bot_export_path }}"
   register: bot_zip_check
+  tags: import_bot
 
 - name: "📦 Validar existência do arquivo para importação"
-  fail:
+  ansible.builtin.fail:
     msg: "❌ Arquivo {{ bot_export_path }} não encontrado!"
   when: not bot_zip_check.stat.exists
   tags: import_bot
 
+# # Garantia de que o roleArn é da CONTA DE DESTINO
+# - name: "🔍 Validar que o roleArn está na conta destino"
+#   ansible.builtin.assert:
+#     that:
+#       - dest_account_role_arn is match('^arn:aws:iam::' ~ dest_account_id ~ ':role/.+')
+#     fail_msg: "roleArn precisa estar na conta {{ dest_account_id }}. Valor: {{ dest_account_role_arn }}"
+#   tags: import_bot
+
 - name: "🔗 Criar upload URL para importação"
-  shell: >
-    aws lexv2-models create-upload-url
-    --region us-east-1
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - create-upload-url
+      - --region
+      - "{{ region }}"
   register: upload_result
   changed_when: false
   tags: import_bot
@@ -23,31 +35,30 @@
     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "📥 Extrair importId e uploadUrl"
-  set_fact:
-    import_id: "{{ upload_result.stdout | from_json | json_query('importId') }}"
-    upload_url: "{{ upload_result.stdout | from_json | json_query('uploadUrl') }}"
+  ansible.builtin.set_fact:
+    import_id: "{{ (upload_result.stdout | from_json).importId }}"
+    upload_url: "{{ (upload_result.stdout | from_json).uploadUrl }}"
   tags: import_bot
 
-- name: "📤 Enviar arquivo para Lex usando curl"
-  shell: >
-    curl -s -X PUT "{{ upload_url }}"
+- name: "📤 Enviar arquivo zip para URL pré-assinada"
+  ansible.builtin.shell: >
+    curl -sS -X PUT "{{ upload_url }}"
     -H "Content-Type: application/zip"
     --upload-file "{{ bot_export_path }}"
   register: upload_curl
   changed_when: true
+  failed_when: upload_curl.rc != 0
   tags: import_bot
 
-- name: "📦 Definir JSON de especificação do bot"
-  set_fact:
+- name: "📦 Montar JSON de especificação do bot (to_json)"
+  ansible.builtin.set_fact:
     bot_specification_json: >-
       {{
         {
           "botImportSpecification": {
             "botName": bot_import_name,
-            "roleArn": role_arn,
-            "dataPrivacy": {
-              "childDirected": false
-            },
+            "roleArn": dest_role_bot_arn,
+            "dataPrivacy": { "childDirected": false },
             "idleSessionTTLInSeconds": 300
           }
         } | to_json
@@ -55,12 +66,19 @@
   tags: import_bot
 
 - name: "🚀 Iniciar importação do bot"
-  shell: >
-    aws lexv2-models start-import
-    --import-id "{{ import_id }}"
-    --resource-specification '{{ bot_specification_json }}'
-    --merge-strategy FailOnConflict
-    --region {{ region }}
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - start-import
+      - --import-id
+      - "{{ import_id }}"
+      - --resource-specification
+      - "{{ bot_specification_json }}"
+      - --merge-strategy
+      - FailOnConflict
+      - --region
+      - "{{ region }}"
   register: import_start
   changed_when: true
   tags: import_bot
@@ -69,18 +87,26 @@
     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
+# Poll até Completed; falha explícita para estados inválidos
 - name: "⏳ Aguardar conclusão da importação"
-  shell: >
-    aws lexv2-models describe-import
-    --import-id "{{ import_id }}"
-    --region us-east-1
-    --query 'importStatus'
-    --output text
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - describe-import
+      - --import-id
+      - "{{ import_id }}"
+      - --region
+      - "{{ region }}"
+      - --query
+      - importStatus
+      - --output
+      - text
   register: import_status
-  retries: 20
+  retries: 60
   delay: 5
-  until: import_status.stdout == "Completed" or import_status.stdout == "Failed"
-  failed_when: import_status.stdout == "Failed"
+  until: import_status.stdout in ["Completed", "Failed", "Deleting", "Deleted"]
+  failed_when: import_status.stdout in ["Failed", "Deleting", "Deleted"] or import_status.rc != 0
   changed_when: false
   tags: import_bot
   environment:
@@ -88,20 +114,26 @@
     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
-- name: "📋 Mostrar status final da importação"
-  debug:
+- name: "✅ Importação concluída"
+  ansible.builtin.debug:
     msg: "✅ Importação concluída com status: {{ import_status.stdout }}"
   when: import_status.stdout == "Completed"
   tags: import_bot
 
 - name: "❌ Motivo da falha na importação"
-  shell: >
-    aws lexv2-models describe-import
-    --import-id "{{ import_id }}"
-    --region us-east-1
-    --profile {{ profile_AWS }}
-    --query 'failureReason'
-    --output text
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - describe-import
+      - --import-id
+      - "{{ import_id }}"
+      - --region
+      - "{{ region }}"
+      - --query
+      - 'failureReasons'
+      - --output
+      - text
   when: import_status.stdout == "Failed"
   register: failure_reason
   changed_when: false
@@ -112,7 +144,7 @@
     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "🛑 Mostrar motivo da falha"
-  debug:
+  ansible.builtin.debug:
     msg: "Importação falhou: {{ failure_reason.stdout }}"
   when: import_status.stdout == "Failed"
   tags: import_bot

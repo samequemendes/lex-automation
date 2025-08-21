@@ -12,7 +12,14 @@ env: "hml" # Input de dado
 project_name: "amazon-lex-automation" # Input de dado
 aws_assume_role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole"
 dest_aws_assume_role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole"
+orig_account_id: "022499044898"
+dest_account_id: "743065069150"
+role_name: "CrossAccountMasterRole"
+prefix_iam: "arn:aws:iam::"
 
+dest_account: "{{ prefix_iam + dest_account_id + role_name}}"
+dest_account_role_arn: "{{ prefix_iam }}{{ dest_account_id }}:role/{{ role_name }}"
+orig_account_role_arn: "{{ prefix_iam }}{{ orig_account_id }}:role/{{ role_name }}"
 ### Lex bot settings
 # Lex bot configuration para migração
 
@@ -22,6 +29,9 @@ role_arn: "arn:aws:iam::022499044898:role/CrossAccountMasterRole" # Assumir a Ro
 bot_name: "Bot-automatizado" # Input de dado {Nome do Bot que deseja importar}
 lambda_function_arn: "arn:aws:lambda:us-east-1:022499044898:function:lambda-agendamento-console" # Input de dado {ARN da função Lambda que será associada ao bot}
 alias_name: "versao-gui"
+bot_version: "DRAFT" # Input de dado {Versão do Bot que deseja importar}
+dest_role_bot_arn: "arn:aws:iam::743065069150:role/poc-role-amazon-lex-sameque-mendes" # Input de dado {ARN da função Lambda que será associada ao bot na conta destino}
+
 ### GitHub repository configuration
 # Link do repositório GitHub e Repositório de fallback
 github_repo_url: "https://github.com/samequemendes/amazon-lex-v2-example.git" # Input de dado {URL do repositório GitHub que contém o código terraform}

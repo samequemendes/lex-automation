@@ -1,10 +1,10 @@
 ---
 # Assumir Role na AWS
-- name: Assume Role in AWS
+- name: Assume Role in AWS na conta destino
   sts_assume_role:
-    role_arn: "{{ dest_aws_assume_role_arn }}"
-    role_session_name: "Ansible-Lex-Session"
-    aws_profile: "AgentAssumeRole-743065069150"
+    role_arn: "{{ prefix_iam }}{{ dest_account_id }}:role/{{ role_name }}"
+    role_session_name: "Ansible-Lex-Session-migracao"
+    aws_profile: "AgentAssumeRole-022499044898"
   register: dest_assumed_role
 
 - name: configurar credenciais temporárias da conta AWS Destino
