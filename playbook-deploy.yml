@@ -45,4 +45,4 @@
     - name: "✅ Mensagem de conclusão"
       debug:
         msg: "Playbook de orquestração do Amazon Lex concluído com sucesso!"
-      tags: [deploy_terraform, deploy]
+      tags: [deploy_terraform, deploy, destroy]
