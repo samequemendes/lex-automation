@@ -53,11 +53,24 @@
           region: "us-east-1"
         lock: false
         variables_files: "{{ var_file }}"
+      register: tf_result
       tags: ["terraform_apply", "deploy_bot"]
       environment:
         AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
         AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
         AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+    - name: Definir bot_id a partir do apply (se disponível)
+      set_fact:
+        bot_id: "{{ tf_result.outputs.bot_id.value | trim }}"
+      when: tf_result.outputs is defined and ('bot_id' in tf_result.outputs)
+
+    # Imprime ID do Bot
+    - name: Imprimir ID do Bot
+      ansible.builtin.debug:
+        msg: "bot_id = {{ bot_id }}"
+      when: tf_result.outputs is defined and ('bot_id' in tf_result.outputs)
+    
 
   rescue:
     - name: Terraform falhou — notificar handler para limpar e tentar novamente

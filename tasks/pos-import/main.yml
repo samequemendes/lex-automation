@@ -1,4 +1,5 @@
 ---
+# ⚙️ Fatos iniciais
 - name: Definir alias_locale_settings e bot_version_locale_spec
   set_fact:
     alias_locale_settings:
@@ -12,9 +13,241 @@
       pt_BR:
         sourceBotVersion: "DRAFT"
 
-# (depois vêm as tasks exatamente como no exemplo acima)
+################################################################################
+# 0) SANITY CHECK — Conta/Região/Bot existem e batem
+################################################################################
 
-# ✅ Cria a versão
+# 👤 Qual conta estou usando?
+- name: "👤 STS - obter Account atual"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - sts
+      - get-caller-identity
+      - --query
+      - Account
+      - --output
+      - text
+  register: sts_account
+  changed_when: false
+  no_log: true
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+- name: "🔎 Buscar botId pelo botName '{{ bot_import_name }}'"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - list-bots
+      - --region
+      - "{{ region }}"
+      - --query
+      - "botSummaries[?botName=='{{ bot_import_name }}'].botId | [0]"
+      - --output
+      - text
+  register: bot_id_lookup
+  changed_when: false
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+  # no_log opcional; se habilitar, os detalhes do comando somem do log
+  # no_log: true
+
+- name: "📌 Definir 'imported_id' com o botId encontrado"
+  ansible.builtin.set_fact:
+    imported_id: "{{ bot_id_lookup.stdout | trim }}"
+
+- name: "✅ Mostrar 'imported_id' encontrado (para conferência)"
+  ansible.builtin.debug:
+    msg: "imported_id (botId) = {{ imported_id }}"
+
+- name: "❌ Falhar se não encontrou bot com esse nome na região informada"
+  ansible.builtin.fail:
+    msg: "Nenhum bot com botName='{{ bot_import_name }}' na região {{ region }}. Verifique nome exato e região do import."
+  when: imported_id | length == 0
+
+# 🤖 O bot existe nessa região e está Available?
+- name: "🤖 Descrever bot"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - describe-bot
+      - --bot-id
+      - "{{ imported_id }}"
+      - --region
+      - "{{ region }}"
+      - --query
+      - 'botStatus'
+      - --output
+      - text
+  register: bot_desc
+  changed_when: false
+  failed_when: bot_desc.rc != 0
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+- name: "🚧 Falhar se o bot não estiver Available"
+  ansible.builtin.fail:
+    msg: "Bot '{{ imported_id }}' não está Available (status/name={{ bot_desc.stdout }}). Verifique import/criação na região {{ region }} e conta {{ sts_account.stdout }}."
+  when: bot_desc.stdout.split()[0] != "Available"
+
+################################################################################
+# 1) LOCALE — Garantir que 'pt_BR' existe (criar se estiver faltando)
+################################################################################
+
+# 📜 Listar locales do DRAFT
+- name: "📜 Listar locales do DRAFT"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - list-bot-locales
+      - --bot-id
+      - "{{ imported_id }}"
+      - --bot-version
+      - DRAFT
+      - --region
+      - "{{ region }}"
+      - --query
+      - 'botLocaleSummaries[].localeId'
+      - --output
+      - text
+  register: locales_list
+  changed_when: false
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+# 🧩 Criar locale mínimo se não existir
+#   Requisitos mínimos: localeId, localeName, nluIntentConfidenceThreshold.
+- name: "➕ Criar locale pt_BR (se não existir)"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - create-bot-locale
+      - --bot-id
+      - "{{ imported_id }}"
+      - --bot-version
+      - DRAFT
+      - --locale-id
+      - pt_BR
+      - --locale-name
+      - "Portuguese (Brazil)"
+      - --nlu-intent-confidence-threshold
+      - "0.40"
+      - --region
+      - "{{ region }}"
+      - --query
+      - 'botLocaleStatus'
+      - --output
+      - text
+  register: create_locale_status
+  when: "'pt_BR' not in (locales_list.stdout | default(''))"
+  changed_when: true
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+# ⏳ Esperar o locale aparecer/ficar pronto para build (estado != 'Deleting')
+- name: "⏳ Aguardar locale pt_BR existir"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - describe-bot-locale
+      - --bot-id
+      - "{{ imported_id }}"
+      - --bot-version
+      - DRAFT
+      - --locale-id
+      - pt_BR
+      - --region
+      - "{{ region }}"
+      - --query
+      - botLocaleStatus
+      - --output
+      - text
+  register: ensure_locale_status
+  changed_when: false
+  retries: 60
+  delay: 5
+  until: ensure_locale_status.stdout in ["NotBuilt", "Built", "ReadyExpressTesting", "Failed", "Creating"]
+  failed_when: false  # não falha aqui; só garante que já tem algo para buildar
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+################################################################################
+# 2) BUILD — Build do locale pt_BR e espera até Built
+################################################################################
+
+- name: "🧱 Build do locale pt_BR"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - build-bot-locale
+      - --bot-id
+      - "{{ imported_id }}"
+      - --bot-version
+      - DRAFT
+      - --locale-id
+      - pt_BR
+      - --region
+      - "{{ region }}"
+  register: build_locale_cmd
+  changed_when: true
+  failed_when: build_locale_cmd.rc != 0
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+  no_log: true   # evita ecoar stderr com detalhes sensíveis
+
+- name: "⏳ Aguardar locale pt_BR ficar Built"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - describe-bot-locale
+      - --bot-id
+      - "{{ imported_id }}"
+      - --bot-version
+      - DRAFT
+      - --locale-id
+      - pt_BR
+      - --region
+      - "{{ region }}"
+      - --query
+      - '{status:botLocaleStatus,fail:failureReasons}'
+      - --output
+      - text
+  register: locale_status
+  changed_when: false
+  retries: 120
+  delay: 5
+  until: locale_status.stdout.split()[0] == "Built"
+  failed_when: locale_status.stdout.split()[0] == "Failed"
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+################################################################################
+# 3) VERSION — Criar versão do bot e aguardar Available
+################################################################################
+
 - name: "🚀 Criar nova versão do bot"
   ansible.builtin.command:
     argv:
@@ -22,11 +255,11 @@
       - lexv2-models
       - create-bot-version
       - --bot-id
-      - "{{ bot_id }}"
+      - "{{ imported_id }}"
       - --region
       - "{{ region }}"
       - --bot-version-locale-specification
-      - '{"pt_BR":{"sourceBotVersion":"DRAFT"}}'
+      - "{{ bot_version_locale_spec | to_json }}"
       - --query
       - botVersion
       - --output
@@ -34,156 +267,3 @@
   register: bot_version
   changed_when: true
   environment:
-    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
-
-# ⏳ Poll da versão (sem while)
-- name: "⏳ Aguardar versão '{{ bot_version.stdout }}' ficar Available"
-  ansible.builtin.command:
-    argv:
-      - aws
-      - lexv2-models
-      - describe-bot-version
-      - --bot-id
-      - "{{ bot_id }}"
-      - --bot-version
-      - "{{ bot_version.stdout }}"
-      - --region
-      - "{{ region }}"
-      - --query
-      - botStatus
-      - --output
-      - text
-  register: version_status
-  changed_when: false
-  retries: 120
-  delay: 5
-  until: version_status.stdout == "Available"
-  failed_when: version_status.stdout == "Failed"
-  environment:
-    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
-
-# 🔎 Descobre se o alias existe
-- name: "🔎 Verificar se alias '{{ alias_name }}' existe"
-  ansible.builtin.command:
-    argv:
-      - aws
-      - lexv2-models
-      - list-bot-aliases
-      - --bot-id
-      - "{{ bot_id }}"
-      - --region
-      - "{{ region }}"
-      - --query
-      - "botAliasSummaries[?botAliasName=='{{ alias_name }}'].botAliasId | [0]"
-      - --output
-      - text
-  register: existing_alias_id
-  changed_when: false
-  environment:
-    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
-
-# 🔁 Criar alias (se NÃO existir) já com a Lambda
-- name: "🔁 Criar alias '{{ alias_name }}' com Lambda"
-  ansible.builtin.command:
-    argv:
-      - aws
-      - lexv2-models
-      - create-bot-alias
-      - --bot-id
-      - "{{ bot_id }}"
-      - --bot-alias-name
-      - "{{ alias_name }}"
-      - --bot-version
-      - "{{ bot_version.stdout | trim }}"
-      - --bot-alias-locale-settings
-      - "{{ alias_locale_settings | to_json }}"
-      - --region
-      - "{{ region }}"
-      - --query
-      - botAliasId
-      - --output
-      - text
-  register: bot_alias_create
-  when: existing_alias_id.stdout in ["", "None", "null"]
-  environment:
-    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
-
-# ♻️ Atualizar alias (se JÁ existir) para apontar a versão e Lambda
-- name: "♻️ Atualizar alias '{{ alias_name }}' com Lambda"
-  ansible.builtin.command:
-    argv:
-      - aws
-      - lexv2-models
-      - update-bot-alias
-      - --bot-id
-      - "{{ bot_id }}"
-      - --bot-alias-id
-      - "{{ existing_alias_id.stdout | trim }}"
-      - --bot-version
-      - "{{ bot_version.stdout | trim }}"
-      - --bot-alias-locale-settings
-      - "{{ alias_locale_settings | to_json }}"
-      - --region
-      - "{{ region }}"
-      - --query
-      - botAliasId
-      - --output
-      - text
-  register: bot_alias_update
-  when: existing_alias_id.stdout not in ["", "None", "null"]
-  environment:
-    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
-
-# 📌 Normaliza o alias_id (criado ou atualizado)
-- name: "📌 Definir alias_id"
-  set_fact:
-    bot_alias_id: >-
-      {{ (bot_alias_create.stdout if (existing_alias_id.stdout in ["", "None", "null"])
-          else bot_alias_update.stdout) | trim }}
-
-# ⏳ Poll do alias
-- name: "⏳ Aguardar alias '{{ alias_name }}' ficar Available"
-  ansible.builtin.command:
-    argv:
-      - aws
-      - lexv2-models
-      - describe-bot-alias
-      - --bot-id
-      - "{{ bot_id }}"
-      - --bot-alias-id
-      - "{{ bot_alias_id }}"
-      - --region
-      - "{{ region }}"
-      - --query
-      - botAliasStatus
-      - --output
-      - text
-  register: alias_status
-  changed_when: false
-  retries: 120
-  delay: 5
-  until: alias_status.stdout == "Available"
-  failed_when: alias_status.stdout == "Failed"
-  environment:
-    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
-
-- name: "🎉 Exibir resultado final"
-  debug:
-    msg: |
-      ✅ Bot pronto para uso!
-      🔗 Informações:
-      - botId: {{ bot_id }}
-      - botVersion: {{ bot_version.stdout }}
-      - alias: {{ alias_name }} (ID: {{ bot_alias_id }})

@@ -33,10 +33,6 @@
     # - import_tasks: tasks/list_bot.yml
     #   tags: [list_bots]
 
-    # 📤 Criação do alias bot
-    - import_tasks: tasks/pos-import/main.yml
-      tags: [deploy_terraform, deploy, pos_import]
-
     # # 📥 Importação do bot na conta destino
     # - import_tasks: tasks/import_bot.yml
     #   tags: [import_bot]

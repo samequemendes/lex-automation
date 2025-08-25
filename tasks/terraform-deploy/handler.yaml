@@ -5,7 +5,7 @@
 - name: Remover diretórios locais do Terraform
   listen: "retry_terraform"
   ansible.builtin.file:
-    path: "{{ item }}"
+    path: "{{ local_clone_path }}"
     state: absent
   loop:
     # - "{{ local_clone_path }}/terraform"            # caso você realmente tenha este diretório
