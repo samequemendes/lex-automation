@@ -1,0 +1,30 @@
+---
+# handler.yaml
+# Apaga diretórios/arquivos locais do Terraform e tenta novamente o apply
+
+- name: Remover diretórios locais do Terraform
+  listen: "retry_terraform"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    # - "{{ local_clone_path }}/terraform"            # caso você realmente tenha este diretório
+    - "{{ local_clone_path }}/.terraform"           # diretório padrão do TF
+    - "{{ local_clone_path }}/.terraform.lock.hcl"  # lock local
+
+- name: Reexecutar Terraform (retry)
+  listen: "retry_terraform"
+  community.general.terraform:
+    project_path: "{{ local_clone_path }}"
+    state: present
+    force_init: true
+    backend_config:
+      bucket: "its-on-terraform-tf-states"
+      key: "terraform-states/lexv2/terraform.tfstate"
+      region: "us-east-1"
+    lock: false
+    variables_files: "{{ var_file }}"
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
