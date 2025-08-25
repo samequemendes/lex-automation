@@ -1,4 +1,19 @@
 ---
+- name: Definir alias_locale_settings e bot_version_locale_spec
+  set_fact:
+    alias_locale_settings:
+      pt_BR:
+        enabled: true
+        codeHookSpecification:
+          lambdaCodeHook:
+            lambdaARN: "{{ lambda_function_arn }}"
+            codeHookInterfaceVersion: "1.0"
+    bot_version_locale_spec:
+      pt_BR:
+        sourceBotVersion: "DRAFT"
+
+# (depois vêm as tasks exatamente como no exemplo acima)
+
 # ✅ Cria a versão
 - name: "🚀 Criar nova versão do bot"
   ansible.builtin.command:
@@ -85,18 +100,9 @@
       - --bot-alias-name
       - "{{ alias_name }}"
       - --bot-version
-      - "{{ bot_version }}"
+      - "{{ bot_version.stdout | trim }}"
       - --bot-alias-locale-settings
-      - >-
-        {"pt_BR":{
-          "enabled": true,
-          "codeHookSpecification":{
-            "lambdaCodeHook":{
-              "lambdaARN":"{{ lambda_function_arn }}",
-              "codeHookInterfaceVersion":"1.0"
-            }
-          }
-        }}
+      - "{{ alias_locale_settings | to_json }}"
       - --region
       - "{{ region }}"
       - --query
@@ -120,20 +126,11 @@
       - --bot-id
       - "{{ bot_id }}"
       - --bot-alias-id
-      - "{{ existing_alias_id.stdout }}"
+      - "{{ existing_alias_id.stdout | trim }}"
       - --bot-version
-      - "{{ bot_version }}"
+      - "{{ bot_version.stdout | trim }}"
       - --bot-alias-locale-settings
-      - >-
-        {"pt_BR":{
-          "enabled": true,
-          "codeHookSpecification":{
-            "lambdaCodeHook":{
-              "lambdaARN":"{{ lambda_function_arn }}",
-              "codeHookInterfaceVersion":"1.0"
-            }
-          }
-        }}
+      - "{{ alias_locale_settings | to_json }}"
       - --region
       - "{{ region }}"
       - --query
