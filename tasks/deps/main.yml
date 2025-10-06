@@ -3,19 +3,19 @@
   ansible.builtin.command: terraform --version
   register: terraform_version
   ignore_errors: yes
-  tags: ["setup_terraform" , "deploy_bot"]
+  tags: ["setup_terraform" , "deploy_bot", "deps"]
 
 - name: Informar que o Terraform já está instalado
   ansible.builtin.debug:
     msg: "Terraform já está instalado: {{ terraform_version.stdout_lines[0] }}"
   when: terraform_version.rc == 0
-  tags: ["setup_terraform" , "deploy_bot"]
+  tags: ["setup_terraform" , "deploy_bot", "deps"]
 
 - name: Informar que o Terraform não está instalado e iniciar download
   ansible.builtin.debug:
     msg: "Terraform não está instalado. Iniciando download e instalação..."
   when: terraform_version.rc != 0
-  tags: ["setup_terraform" , "deploy_bot"]
+  tags: ["setup_terraform" , "deploy_bot", "deps"]
 
 - name: Instalar Terraform se não existir
   ansible.builtin.shell: |
@@ -23,9 +23,36 @@
     unzip terraform.zip
     mv terraform /usr/local/bin/
   when: terraform_version.rc != 0
-  tags: ["setup_terraform" , "deploy_bot"]
+  tags: ["setup_terraform" , "deploy_bot", "deps"]
 
 - name: Limpar diretorio para clone
   ansible.builtin.file:
     path: "{{ local_clone_path }}"
     state: absent
+
+# Instala JFfron CLI se não existir
+- name: Verificar se o JFrog CLI já está instalado
+  ansible.builtin.command: jfrog -v
+  register: jfrog_version
+  ignore_errors: yes
+  tags: ["setup_terraform" , "deploy_bot", "deps"]
+
+- name: Informar que o JFrog CLI já está instalado
+  ansible.builtin.debug:
+    msg: "JFrog CLI já está instalado: {{ jfrog_version.stdout_lines[0] }}"
+  when: jfrog_version.rc == 0
+  tags: ["setup_terraform" , "deploy_bot", "deps"]  
+
+- name: Informar que o JFrog CLI não está instalado e iniciar download
+  ansible.builtin.debug:
+    msg: "JFrog CLI não está instalado. Iniciando download e instalação..."
+  when: jfrog_version.rc != 0
+  tags: ["setup_terraform" , "deploy_bot", "deps"]
+
+- name: Instalar JFrog CLI se não existir
+  ansible.builtin.shell: |
+    curl -fL https://getcli.jfrog.io | sh
+    mv jfrog /usr/local/bin/
+  when: jfrog_version.rc != 0
+  tags: ["setup_terraform" , "deploy_bot", "deps"]
+  become: yes

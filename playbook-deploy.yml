@@ -8,9 +8,9 @@
 
   tasks:
     
-    # # 📝 Etapa de validação de pré-requisitos
-    # - import_tasks: tasks/validate_prerequisites.yml
-    #   tags: [validate_prerequisites]
+    # 📝 Etapa de validação de pré-requisitos
+    - import_tasks: tasks/deps/main.yml
+      tags: [deps]
     
     # Authentication AWS
     - name: "🔑 Autenticação AWS"
