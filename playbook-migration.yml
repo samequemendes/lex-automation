@@ -8,9 +8,9 @@
 
   tasks:
     
-    # # 📝 Etapa de validação de pré-requisitos
-    # - import_tasks: tasks/validate_prerequisites.yml
-    #   tags: [validate_prerequisites]
+    # 📝 Etapa de validação de pré-requisitos
+    - import_tasks: tasks/deps/main.yml
+      tags: [deps]
     
     # Authentication AWS
     - name: "🔑 Autenticação AWS Origem"
@@ -20,6 +20,11 @@
     # 📤 Exportação do bot da conta origem
     - import_tasks: tasks/export-bot/main.yml
       tags: [origem,export]
+
+    # Upload do bot para Jfrog
+    - name: "📤 Upload do bot para Jfrog"
+      import_tasks: tasks/export-bot-artifact/main.yml
+      tags: [jfrog,upload]
 
     # # 📝 Autenticação na conta de Destino
     - name: "🔑 Autenticação AWS Destino"

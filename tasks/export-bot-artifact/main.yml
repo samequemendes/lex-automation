@@ -1,0 +1,139 @@
+- name: "❌ Verificar se o bot foi selecionado"
+  fail:
+    msg: "Nenhum bot foi selecionado! Execute a task de listagem e seleção de bot antes de exportar."
+  when: bot_id is not defined
+  tags: export_bot
+
+# - name: "📦 Iniciar exportação do bot"
+#   shell: >
+#     aws lexv2-models create-export
+#     --resource-specification botExportSpecification={{ '{botId=' + bot_id + ',botVersion=1}' }}
+#     --file-format LexJson
+#     --region "{{ region }}"
+#     --query 'exportId'
+#     --output text
+#   register: export_result
+#   changed_when: false
+#   tags: export_bot
+#   environment:
+#     AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+#     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+#     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+- name: "📦 Iniciar exportação do bot"
+  ansible.builtin.command:
+    argv:
+      - aws
+      - lexv2-models
+      - create-export
+      - --resource-specification
+      - "botExportSpecification={botId={{ bot_id }},botVersion={{ bot_version }}}"
+      - --file-format
+      - LexJson
+      - --region
+      - "{{ region }}"
+      - --query
+      - exportId
+      - --output
+      - text
+  register: export_result
+  changed_when: true
+  tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+# ⏳ Espera a exportação completar (status Completed)
+- name: "🕒 Aguardar exportação concluir"
+  ansible.builtin.command: >
+    aws lexv2-models describe-export
+    --export-id {{ export_result.stdout }}
+    --region "{{ region }}"
+    --query 'exportStatus'
+    --output text
+  register: export_status
+  retries: 60           # tenta por até ~5 minutos
+  delay: 5
+  until: export_status.stdout == "Completed"
+  failed_when: export_status.rc != 0 or export_status.stdout in ["Failed","Deleting","Deleted"]
+  changed_when: false
+  tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+# 📥 Pega a URL de download agora que está Completed
+- name: "📥 Obter download URL da exportação"
+  ansible.builtin.command: >
+    aws lexv2-models describe-export
+    --export-id {{ export_result.stdout }}
+    --region "{{ region }}"
+    --query 'downloadUrl'
+    --output text
+  register: download_url
+  changed_when: false
+  tags: export_bot
+  environment:
+    AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
+    AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
+    AWS_SESSION_TOKEN: "{{ aws_session_token }}"
+
+# 🔒 Garante que veio uma URL válida (não 'None')
+- name: "🔎 Validar URL de download"
+  assert:
+    that:
+      - download_url.stdout is match('^https?://')
+    fail_msg: "A exportação não retornou uma URL válida. Valor recebido: {{ download_url.stdout | default('undefined') }}"
+  tags: export_bot
+
+# 🗂️ Datas e caminhos
+- name: "🕓 Definir data atual no formato YYYY-MM-DD"
+  set_fact:
+    export_date: "{{ ansible_date_time.date }}"
+  tags: export_bot
+
+- name: "📄 Definir nome do arquivo de exportação"
+  set_fact:
+    bot_export_filename: "{{ export_date }}-{{ bot_id }}.zip"
+    bot_export_path: "artifacts/{{ export_date }}-{{ bot_id }}.zip"
+  tags: export_bot
+
+- name: "📁 Garantir diretório de artefatos"
+  file:
+    path: artifacts
+    state: directory
+  tags: export_bot
+
+# ⬇️ Agora baixa o ZIP
+- name: "⬇️ Baixar bot exportado para {{ bot_export_path }}"
+  get_url:
+    url: "{{ download_url.stdout }}"
+    dest: "{{ bot_export_path }}"
+    mode: '0644'
+    timeout: 60          # URL expira; baixe logo
+  tags: export_bot
+
+# 📨 Upload Jfrog CLI
+- name: "📤 Upload do bot exportado para Jfrog"
+  ansible.builtin.command:
+    argv:
+      - jfrog
+      - rt
+      - u
+      - "{{ bot_export_path }}"
+      - "{{ jfrog_repo }}/{{ bot_export_filename }}"
+      - --url="{{ jfrog_url }}"
+      - --user="{{ jfrog_user }}"
+      - --password="{{ jfrog_password }}"
+      - --flat=true
+  register: jfrog_upload_result
+  changed_when: "'Uploaded' in jfrog_upload_result.stdout"
+  failed_when: jfrog_upload_result.rc != 0 or "'Uploaded' not in jfrog_upload_result.stdout"
+  tags: [jfrog,upload]
+
+- name: "✅ Confirmar exportação em {{ bot_export_path }}"
+  debug:
+    msg: "Bot exportado com sucesso para '{{ bot_export_path }}'"
+  tags: export_bot
