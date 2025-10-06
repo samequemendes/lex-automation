@@ -1,0 +1,1 @@
+ansible-playbook playbook-migration.yml --tag export -e bot_id="H5CKDIEHE5" -e bot_version="DRAFT" -e orig_account_id="743065069150" -e dest_account_id="022499044898" >> playbook-migration.log
