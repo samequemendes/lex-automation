@@ -4,21 +4,6 @@
   when: bot_id is not defined
   tags: export_bot
 
-# - name: "📦 Iniciar exportação do bot"
-#   shell: >
-#     aws lexv2-models create-export
-#     --resource-specification botExportSpecification={{ '{botId=' + bot_id + ',botVersion=1}' }}
-#     --file-format LexJson
-#     --region "{{ region }}"
-#     --query 'exportId'
-#     --output text
-#   register: export_result
-#   changed_when: false
-#   tags: export_bot
-#   environment:
-#     AWS_ACCESS_KEY_ID: "{{ aws_access_key }}"
-#     AWS_SECRET_ACCESS_KEY: "{{ aws_secret_key }}"
-#     AWS_SESSION_TOKEN: "{{ aws_session_token }}"
 
 - name: "📦 Iniciar exportação do bot"
   ansible.builtin.command:
